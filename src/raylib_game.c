@@ -10,6 +10,8 @@
 ********************************************************************************************/
 
 #include "raylib.h"
+#include "rcamera.h"
+
 
 #if defined(PLATFORM_WEB)
     #include <emscripten/emscripten.h>      // Emscripten library
