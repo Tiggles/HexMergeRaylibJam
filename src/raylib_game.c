@@ -112,11 +112,11 @@ int main(void)
         keeperSprites[FRONT] = LoadTexture("../../../src/resources/character_front.png");
         keeperSprites[SIDE] = LoadTexture("../../../src/resources/character_side.png");
 #else
-        hive = LoadTexture("./src/resources/hive.png");
-        harvestBg = LoadTexture("./src/resources/harvest_bg.png");
-        keeperSprites[BACK] = LoadTexture("./src/resources/character_back.png");
-        keeperSprites[FRONT] = LoadTexture("./src/resources/character_front.png");
-        keeperSprites[SIDE] = LoadTexture("./src/resources/character_side.png");
+        hive = LoadTexture("resources/hive.png");
+        harvestBg = LoadTexture("resources/harvest_bg.png");
+        keeperSprites[BACK] = LoadTexture("resources/character_back.png");
+        keeperSprites[FRONT] = LoadTexture("resources/character_front.png");
+        keeperSprites[SIDE] = LoadTexture("resources/character_side.png");
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
