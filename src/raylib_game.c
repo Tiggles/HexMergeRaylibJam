@@ -43,15 +43,22 @@ typedef enum {
 
 // TODO: Define your custom data types here
 
-struct GameState {
-    Camera* camera;
-} GameState;
-
 enum CurrentScene {
     MENU,
-    BEEKEEPER,
+    BEEKEEPING,
     HIVE,
 };
+
+enum KeeperSprite {
+    BACK = 0,
+    FRONT = 1,
+    SIDE = 2,
+};
+
+struct GameState {
+    enum CurrentScene currentScene;
+    Vector2 playerPosition;
+} GameState;
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
@@ -60,6 +67,8 @@ static const int screenWidth = 720;
 static const int screenHeight = 720;
 static const int HONEYCOMBS_COLUMNS = 16;
 static const int HONEYCOMBS_ROWS = 14;
+static const int MOVEMENT_SPEED = 200;
+static float nextSceneChange = 0.0;
 static Texture2D hive;
 static Texture2D harvestBg;
 static Texture2D keeperSprites[3];
@@ -91,11 +100,24 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Best Bee-uddies");
 
     gs = malloc(sizeof(struct GameState));
+    gs->currentScene = MENU;
+    gs->playerPosition = (Vector2){ 50,50 };
 
     printf("%s\n", GetWorkingDirectory());
 
-    hive = LoadTexture("./resources/hive.png");
-    printf("%i\n", hive.height);
+#if defined(WIN32)     
+        hive = LoadTexture("../../../src/resources/hive.png");
+        harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
+        keeperSprites[BACK] = LoadTexture("../../../src/resources/character_back.png");
+        keeperSprites[FRONT] = LoadTexture("../../../src/resources/character_front.png");
+        keeperSprites[SIDE] = LoadTexture("../../../src/resources/character_side.png");
+#else
+        hive = LoadTexture("./src/resources/hive.png");
+        harvestBg = LoadTexture("./src/resources/harvest_bg.png");
+        keeperSprites[BACK] = LoadTexture("./src/resources/character_back.png");
+        keeperSprites[FRONT] = LoadTexture("./src/resources/character_front.png");
+        keeperSprites[SIDE] = LoadTexture("./src/resources/character_side.png");
+#endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
 
@@ -139,7 +161,34 @@ void UpdateDrawFrame(void)
 {
     // Update
     //----------------------------------------------------------------------------------
-    // TODO: Update variables / Implement example logic at this point
+    if (IsKeyDown(KEY_TAB)) {
+        if (nextSceneChange < 0) {
+            gs->currentScene = (gs->currentScene + 1) % 3;
+            nextSceneChange = 0.2;
+        }
+        nextSceneChange -= GetFrameTime();
+    }
+
+
+    switch (gs->currentScene) {
+        case BEEKEEPING: {
+            if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
+                gs->playerPosition.y += MOVEMENT_SPEED * GetFrameTime();
+            }
+            if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
+                gs->playerPosition.y -= MOVEMENT_SPEED * GetFrameTime();
+
+            }
+            if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
+                gs->playerPosition.x -= MOVEMENT_SPEED * GetFrameTime();
+
+            }
+            if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
+                gs->playerPosition.x += MOVEMENT_SPEED * GetFrameTime();
+
+            }
+        }
+    }
 
     frameCounter++;
     //----------------------------------------------------------------------------------
@@ -152,18 +201,23 @@ void UpdateDrawFrame(void)
     {
         ClearBackground(RAYWHITE);
 
-        // TODO: Draw your game screen here
-
-        DrawRectangle(70, 90, 200, 200, BLACK);
-        DrawRectangle(70 + 16, 90 + 16, 200 - 32, 200 - 32, RAYWHITE);
-        DrawText("raylib", 70 + 200 - MeasureText("raylib", 40) - 32, 90 + 200 - 40 - 24, 40, BLACK);
-
-        DrawText("6.x", 290, 90 - 26, 280, BLACK);
-        DrawText("GAMEJAM", 70, 90 + 210, 120, MAROON);
-
-        if ((frameCounter / 20) % 2) DrawText("are you ready?", 160, 500, 50, BLACK);
-
-        DrawRectangleLinesEx((Rectangle) { 0, 0, screenWidth, screenHeight }, 16, BLACK);
+        switch (gs->currentScene) {
+            case MENU: {
+                // TODO
+                DrawText("This is supposed to be the menu. Sorry!", 50, 50, 28, BLACK);
+                DrawText("Press <TAB> to cycle scenes (that don't do anything, really)", 50, 150, 18, BLACK);
+                break;
+            }
+            case BEEKEEPING: {
+                DrawTexture(keeperSprites[FRONT], gs->playerPosition.x, gs->playerPosition.y, WHITE);
+                DrawTexture(hive, 200, 200, WHITE);
+                break;
+            }
+            case HIVE: {
+                DrawTexture(harvestBg, 0, 0, WHITE);
+                break;
+            }
+        }
     }
     EndTextureMode();
 
