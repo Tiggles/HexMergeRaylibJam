@@ -18,6 +18,7 @@
 #include <stdio.h>                          // Required for: printf()
 #include <stdlib.h>                         // Required for: 
 #include <string.h>                         // Required for:
+#include <math.h>                           // Required for: sqrt, to calculate euclidean distance
 
 //----------------------------------------------------------------------------------
 // Defines and Macros
@@ -86,8 +87,8 @@ typedef struct Animation {
 //----------------------------------------------------------------------------------
 static const int screenWidth = 720;
 static const int screenHeight = 720;
-static const int HONEYCOMBS_COLUMNS = 16;
-static const int HONEYCOMBS_ROWS = 14;
+//static const int HONEYCOMBS_COLUMNS = 16;
+//static const int HONEYCOMBS_ROWS = 14;
 static const int MOVEMENT_SPEED = 200;
 static const Color GRASSGREEN = {51, 152, 75, 1};
 static float nextSceneChange = 0.0;
@@ -95,6 +96,7 @@ static Animation hive;
 static Texture2D harvestBg;
 static Texture2D gardenBg;
 static Animation keeperSprites[7];
+static Animation keyZ;
 static Camera2D gardenCamera;
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
@@ -108,6 +110,7 @@ struct GameState *gs = NULL;
 //----------------------------------------------------------------------------------
 static void UpdateDrawFrame(void);      // Update and Draw one frame
                                         
+static float vector2Distance(Vector2, Vector2);
 static Animation loadAnimation(char* fileName, int numFrames, int intervalMs);
 static void drawAnimationFrame(Animation* animation, Vector2 position);
 static void unloadAnimation(Animation* animation);
@@ -128,14 +131,14 @@ int main(void)
 
     gs = malloc(sizeof(struct GameState));
     gs->currentScene = MENU;
-    gs->playerPosition = (Vector2){ 50,50 };
+    gs->playerPosition = (Vector2){ 100,100 };
     gs->playerDirection = DOWN;
     gs->playerMoving = false;
 
     printf("%s\n", GetWorkingDirectory());
 
     gardenCamera.target = gs->playerPosition;
-    gardenCamera.offset = (Vector2){screenWidth/2.0f-24, screenHeight/2.0f-28};
+    gardenCamera.offset = (Vector2){screenWidth/2.0f, screenHeight/2.0f};
     gardenCamera.rotation = 0.0f;
     gardenCamera.zoom = 2.0f;
 
@@ -144,6 +147,7 @@ int main(void)
         hive = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
+        keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -155,6 +159,7 @@ int main(void)
         hive = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
         gardenBg = LoadTexture("resources/garden_bg.png");
+        keyZ = loadAnimation("resources/key_z.png", 10, 200);
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -202,6 +207,11 @@ int main(void)
 //--------------------------------------------------------------------------------------------
 // Module Functions Definition
 //--------------------------------------------------------------------------------------------
+
+// Return euclidean distance between two vectors
+static float vector2Distance(Vector2 a, Vector2 b) {
+    return sqrtf(powf((a.x - b.x), 2) + powf((a.y - b.y), 2));
+}
 
 // Load an animation (spritesheet) into memory with a set of animation parameters.
 static Animation loadAnimation(char* fileName, int numFrames, int intervalMs) {
@@ -256,7 +266,7 @@ static void unloadAnimation(Animation* animation) {
 // 
 //
 void drawGardenScene(void) {
-    KeeperSprite keeperSprite;
+    KeeperSprite keeperSprite = FRONT;
 
     gardenCamera.target = gs->playerPosition;
 
@@ -282,13 +292,21 @@ void drawGardenScene(void) {
             break;
     }
 
-    drawAnimationFrame(&keeperSprites[keeperSprite], gs->playerPosition);
+    Vector2 playerSpritePosition = {gs->playerPosition.x-24, gs->playerPosition.y-28};
+    drawAnimationFrame(&keeperSprites[keeperSprite], playerSpritePosition);
 
     
     // Draw hive
     Vector2 hivePosition = {200, 200};
-    drawAnimationFrame(&hive, hivePosition);
+    Vector2 hiveSpritePosition = {hivePosition.x-33, hivePosition.y-35};
+    drawAnimationFrame(&hive, hiveSpritePosition);
 
+    // Draw key
+    float distance = vector2Distance(gs->playerPosition, hivePosition);
+    if (distance < 100) {
+        Vector2 keyZPos = {192, 165};
+        drawAnimationFrame(&keyZ, keyZPos);
+    }
 
     EndMode2D();
 }
@@ -314,22 +332,30 @@ if (IsKeyDown(KEY_TAB)) {
     switch (gs->currentScene) {
         case GARDEN: {
             if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
-                gs->playerPosition.y += MOVEMENT_SPEED * GetFrameTime();
+                if (gs->playerPosition.y + MOVEMENT_SPEED * GetFrameTime() < 660) {
+                    gs->playerPosition.y += MOVEMENT_SPEED * GetFrameTime();
+                }
                 gs->playerDirection = DOWN;
                 gs->playerMoving = true;
             }
             if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
-                gs->playerPosition.y -= MOVEMENT_SPEED * GetFrameTime();
+                if (gs->playerPosition.y - MOVEMENT_SPEED * GetFrameTime() > 30) {
+                    gs->playerPosition.y -= MOVEMENT_SPEED * GetFrameTime();
+                }
                 gs->playerDirection = UP;
                 gs->playerMoving = true;
             }
             if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
-                gs->playerPosition.x -= MOVEMENT_SPEED * GetFrameTime();
+                if (gs->playerPosition.x - MOVEMENT_SPEED * GetFrameTime() > 15) {
+                    gs->playerPosition.x -= MOVEMENT_SPEED * GetFrameTime();
+                }
                 gs->playerDirection = LEFT;
                 gs->playerMoving = true;
             }
             if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
-                gs->playerPosition.x += MOVEMENT_SPEED * GetFrameTime();
+                if (gs->playerPosition.x + MOVEMENT_SPEED * GetFrameTime() < 710) {
+                    gs->playerPosition.x += MOVEMENT_SPEED * GetFrameTime();
+                }
                 gs->playerDirection = RIGHT;
                 gs->playerMoving = true;
             }
