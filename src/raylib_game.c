@@ -49,7 +49,7 @@ enum CurrentScene {
     HIVE,
 };
 
-enum KeeperSprite {
+typedef enum {
     BACK = 0,
     FRONT = 1,
     SIDE = 2,
@@ -57,7 +57,7 @@ enum KeeperSprite {
     WALK_UP = 4,
     WALK_LEFT = 5,
     WALK_RIGHT = 6,
-};
+} KeeperSprite;
 
 typedef enum {
     UP = 0,
@@ -93,7 +93,9 @@ static const Color GRASSGREEN = {51, 152, 75, 1};
 static float nextSceneChange = 0.0;
 static Animation hive;
 static Texture2D harvestBg;
+static Texture2D gardenBg;
 static Animation keeperSprites[7];
+static Camera2D gardenCamera;
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -132,9 +134,16 @@ int main(void)
 
     printf("%s\n", GetWorkingDirectory());
 
+    gardenCamera.target = gs->playerPosition;
+    gardenCamera.offset = (Vector2){screenWidth/2.0f-24, screenHeight/2.0f-28};
+    gardenCamera.rotation = 0.0f;
+    gardenCamera.zoom = 2.0f;
+
+
 #if defined(WIN32)     
         hive = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
+        gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -145,6 +154,7 @@ int main(void)
 #else
         hive = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
+        gardenBg = LoadTexture("resources/garden_bg.png");
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -221,7 +231,7 @@ static void drawAnimationFrame(Animation* animation, Vector2 position) {
     };
 
     Rectangle destRec = {
-        position.x, position.y, spriteWidth*2, spriteHeight*2
+        position.x, position.y, spriteWidth, spriteHeight
     };
 
     Vector2 origin = {0, 0};
@@ -246,39 +256,41 @@ static void unloadAnimation(Animation* animation) {
 // 
 //
 void drawGardenScene(void) {
+    KeeperSprite keeperSprite;
 
-    if (gs->playerMoving) {
-        switch (gs->playerDirection) {
-            case UP:
-                drawAnimationFrame(&keeperSprites[WALK_UP], gs->playerPosition);
-                break;
-            case DOWN:
-                drawAnimationFrame(&keeperSprites[WALK_DOWN], gs->playerPosition);
-                break;
-            case LEFT:
-                drawAnimationFrame(&keeperSprites[WALK_LEFT], gs->playerPosition);
-                break;
-            case RIGHT:
-                drawAnimationFrame(&keeperSprites[WALK_RIGHT], gs->playerPosition);
-                break;
-        }
-    } else { // Player is not moving
-        switch (gs->playerDirection) {
-            case UP:
-                drawAnimationFrame(&keeperSprites[BACK], gs->playerPosition);
-                break;
-            case DOWN:
-                drawAnimationFrame(&keeperSprites[FRONT], gs->playerPosition);
-                break;
-            case LEFT:
-            case RIGHT:
-                drawAnimationFrame(&keeperSprites[SIDE], gs->playerPosition);
-                break;
-        }
+    gardenCamera.target = gs->playerPosition;
+
+
+    BeginMode2D(gardenCamera); 
+
+    // Draw background
+    DrawTexture(gardenBg, 0, 0, WHITE);
+
+    // Draw player
+    switch (gs->playerDirection) {
+        case UP:
+            if (gs->playerMoving) { keeperSprite = WALK_UP; } else { keeperSprite = BACK; }
+            break;
+        case DOWN:
+            if (gs->playerMoving) { keeperSprite = WALK_DOWN; } else { keeperSprite = FRONT; } 
+            break;
+        case LEFT:
+            if (gs->playerMoving) { keeperSprite = WALK_LEFT; } else { keeperSprite = SIDE; } 
+            break;
+        case RIGHT:
+            if (gs->playerMoving) { keeperSprite = WALK_RIGHT; } else { keeperSprite = SIDE; } 
+            break;
     }
 
+    drawAnimationFrame(&keeperSprites[keeperSprite], gs->playerPosition);
+
+    
+    // Draw hive
     Vector2 hivePosition = {200, 200};
     drawAnimationFrame(&hive, hivePosition);
+
+
+    EndMode2D();
 }
 
 
