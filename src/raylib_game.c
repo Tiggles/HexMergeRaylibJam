@@ -140,8 +140,8 @@ int main(void)
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
         keeperSprites[WALK_DOWN] = loadAnimation("../../../src/resources/character_walk_down.png", 6, 100);
         keeperSprites[WALK_UP] = loadAnimation("../../../src/resources/character_walk_up.png", 6, 100);
-        keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 6, 100);
-        keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 6, 100);
+        keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 4, 200);
+        keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 4, 200);
 #else
         hive = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
@@ -150,8 +150,8 @@ int main(void)
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
         keeperSprites[WALK_DOWN] = loadAnimation("resources/character_walk_down.png", 6, 100);
         keeperSprites[WALK_UP] = loadAnimation("resources/character_walk_up.png", 6, 100);
-        keeperSprites[WALK_LEFT] = loadAnimation("resources/character_walk_left.png", 6, 100);
-        keeperSprites[WALK_RIGHT] = loadAnimation("resources/character_walk_right.png", 6, 100);
+        keeperSprites[WALK_LEFT] = loadAnimation("resources/character_walk_left.png", 4, 200);
+        keeperSprites[WALK_RIGHT] = loadAnimation("resources/character_walk_right.png", 4, 200);
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
@@ -256,10 +256,10 @@ void drawGardenScene(void) {
                 drawAnimationFrame(&keeperSprites[WALK_DOWN], gs->playerPosition);
                 break;
             case LEFT:
-                drawAnimationFrame(&keeperSprites[SIDE], gs->playerPosition);
+                drawAnimationFrame(&keeperSprites[WALK_LEFT], gs->playerPosition);
                 break;
             case RIGHT:
-                drawAnimationFrame(&keeperSprites[SIDE], gs->playerPosition);
+                drawAnimationFrame(&keeperSprites[WALK_RIGHT], gs->playerPosition);
                 break;
         }
     } else { // Player is not moving
