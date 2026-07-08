@@ -45,7 +45,7 @@ typedef enum {
 
 enum CurrentScene {
     MENU,
-    BEEKEEPING,
+    GARDEN,
     HIVE,
 };
 
@@ -53,11 +53,24 @@ enum KeeperSprite {
     BACK = 0,
     FRONT = 1,
     SIDE = 2,
+    WALK_DOWN = 3,
+    WALK_UP = 4,
+    WALK_LEFT = 5,
+    WALK_RIGHT = 6,
 };
+
+typedef enum {
+    UP = 0,
+    DOWN = 1,
+    LEFT = 2,
+    RIGHT = 3,
+} KeeperDirection;
 
 struct GameState {
     enum CurrentScene currentScene;
     Vector2 playerPosition;
+    KeeperDirection playerDirection;
+    bool playerMoving;
 } GameState;
 
 typedef struct Animation {
@@ -80,7 +93,7 @@ static const Color GRASSGREEN = {51, 152, 75, 1};
 static float nextSceneChange = 0.0;
 static Animation hive;
 static Texture2D harvestBg;
-static Texture2D keeperSprites[3];
+static Animation keeperSprites[7];
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -114,21 +127,31 @@ int main(void)
     gs = malloc(sizeof(struct GameState));
     gs->currentScene = MENU;
     gs->playerPosition = (Vector2){ 50,50 };
+    gs->playerDirection = DOWN;
+    gs->playerMoving = false;
 
     printf("%s\n", GetWorkingDirectory());
 
 #if defined(WIN32)     
         hive = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
-        keeperSprites[BACK] = LoadTexture("../../../src/resources/character_back.png");
-        keeperSprites[FRONT] = LoadTexture("../../../src/resources/character_front.png");
-        keeperSprites[SIDE] = LoadTexture("../../../src/resources/character_side.png");
+        keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
+        keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
+        keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
+        keeperSprites[WALK_DOWN] = loadAnimation("../../../src/resources/character_walk_down.png", 6, 100);
+        keeperSprites[WALK_UP] = loadAnimation("../../../src/resources/character_walk_up.png", 6, 100);
+        keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 6, 100);
+        keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 6, 100);
 #else
         hive = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
-        keeperSprites[BACK] = LoadTexture("resources/character_back.png");
-        keeperSprites[FRONT] = LoadTexture("resources/character_front.png");
-        keeperSprites[SIDE] = LoadTexture("resources/character_side.png");
+        keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
+        keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
+        keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
+        keeperSprites[WALK_DOWN] = loadAnimation("resources/character_walk_down.png", 6, 100);
+        keeperSprites[WALK_UP] = loadAnimation("resources/character_walk_up.png", 6, 100);
+        keeperSprites[WALK_LEFT] = loadAnimation("resources/character_walk_left.png", 6, 100);
+        keeperSprites[WALK_RIGHT] = loadAnimation("resources/character_walk_right.png", 6, 100);
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
@@ -188,14 +211,22 @@ static void drawAnimationFrame(Animation* animation, Vector2 position) {
     animation->lastDraw += GetFrameTime();    
 
     float textureWidth = animation->texture.width;
+    float spriteWidth = textureWidth/animation->numFrames;
+    float spriteHeight = animation->texture.height;
     Rectangle frameRec = {
-        textureWidth/animation->numFrames * animation->frame,
+        spriteWidth * animation->frame,
         0,
-        textureWidth/animation->numFrames,
-        animation->texture.height
+        spriteWidth,
+        spriteHeight,
     };
 
-    DrawTextureRec(animation->texture, frameRec, position, WHITE);
+    Rectangle destRec = {
+        position.x, position.y, spriteWidth*2, spriteHeight*2
+    };
+
+    Vector2 origin = {0, 0};
+    //DrawTextureRec(animation->texture, frameRec, position, WHITE);
+    DrawTexturePro(animation->texture, frameRec, destRec, origin, 0, WHITE);
 
     if (animation->lastDraw * 1000 > animation->intervalMs) {
         animation->lastDraw = 0;
@@ -212,39 +243,87 @@ static void unloadAnimation(Animation* animation) {
     UnloadTexture(animation->texture);
 }
 
+// 
+//
+void drawGardenScene(void) {
+
+    if (gs->playerMoving) {
+        switch (gs->playerDirection) {
+            case UP:
+                drawAnimationFrame(&keeperSprites[WALK_UP], gs->playerPosition);
+                break;
+            case DOWN:
+                drawAnimationFrame(&keeperSprites[WALK_DOWN], gs->playerPosition);
+                break;
+            case LEFT:
+                drawAnimationFrame(&keeperSprites[SIDE], gs->playerPosition);
+                break;
+            case RIGHT:
+                drawAnimationFrame(&keeperSprites[SIDE], gs->playerPosition);
+                break;
+        }
+    } else { // Player is not moving
+        switch (gs->playerDirection) {
+            case UP:
+                drawAnimationFrame(&keeperSprites[BACK], gs->playerPosition);
+                break;
+            case DOWN:
+                drawAnimationFrame(&keeperSprites[FRONT], gs->playerPosition);
+                break;
+            case LEFT:
+            case RIGHT:
+                drawAnimationFrame(&keeperSprites[SIDE], gs->playerPosition);
+                break;
+        }
+    }
+
+    Vector2 hivePosition = {200, 200};
+    drawAnimationFrame(&hive, hivePosition);
+}
+
+
 // Update and draw frame
 void UpdateDrawFrame(void)
 {
-    // Update
-    //----------------------------------------------------------------------------------
-    if (IsKeyDown(KEY_TAB)) {
-        if (nextSceneChange < 0) {
-            gs->currentScene = (gs->currentScene + 1) % 3;
-            nextSceneChange = 0.2;
-        }
-        nextSceneChange -= GetFrameTime();
+// Update
+//----------------------------------------------------------------------------------
+gs->playerMoving = false;
+
+
+if (IsKeyDown(KEY_TAB)) {
+    if (nextSceneChange < 0) {
+        gs->currentScene = (gs->currentScene + 1) % 3;
+        nextSceneChange = 0.2;
+    }
+    nextSceneChange -= GetFrameTime();
     }
 
 
     switch (gs->currentScene) {
-        case BEEKEEPING: {
+        case GARDEN: {
             if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
                 gs->playerPosition.y += MOVEMENT_SPEED * GetFrameTime();
+                gs->playerDirection = DOWN;
+                gs->playerMoving = true;
             }
             if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
                 gs->playerPosition.y -= MOVEMENT_SPEED * GetFrameTime();
-
+                gs->playerDirection = UP;
+                gs->playerMoving = true;
             }
             if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
                 gs->playerPosition.x -= MOVEMENT_SPEED * GetFrameTime();
-
+                gs->playerDirection = LEFT;
+                gs->playerMoving = true;
             }
             if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
                 gs->playerPosition.x += MOVEMENT_SPEED * GetFrameTime();
-
+                gs->playerDirection = RIGHT;
+                gs->playerMoving = true;
             }
         }
         default:
+            // TODO
             break;
     }
 
@@ -266,11 +345,8 @@ void UpdateDrawFrame(void)
                 DrawText("Press <TAB> to cycle scenes (that don't do anything, really)", 50, 150, 18, BLACK);
                 break;
             }
-            case BEEKEEPING: {
-                DrawTexture(keeperSprites[FRONT], gs->playerPosition.x, gs->playerPosition.y, WHITE);
-
-                Vector2 hivePosition = {200, 200};
-                drawAnimationFrame(&hive, hivePosition);
+            case GARDEN: {
+                drawGardenScene(); 
                 break;
             }
             case HIVE: {
