@@ -1,4 +1,4 @@
-/*******************************************************************************************
+/********************************************************************************************
 *
 *   raylib gamejam template
 *
@@ -60,6 +60,14 @@ struct GameState {
     Vector2 playerPosition;
 } GameState;
 
+typedef struct Animation {
+    int frame;
+    int numFrames;
+    int intervalMs;
+    float lastDraw;
+    Texture2D texture;
+} Animation;
+
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
 //----------------------------------------------------------------------------------
@@ -68,12 +76,11 @@ static const int screenHeight = 720;
 static const int HONEYCOMBS_COLUMNS = 16;
 static const int HONEYCOMBS_ROWS = 14;
 static const int MOVEMENT_SPEED = 200;
+static const Color GRASSGREEN = {51, 152, 75, 1};
 static float nextSceneChange = 0.0;
-static Texture2D hive;
+static Animation hive;
 static Texture2D harvestBg;
 static Texture2D keeperSprites[3];
-
-
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -85,6 +92,11 @@ struct GameState *gs = NULL;
 // Module Functions Declaration
 //----------------------------------------------------------------------------------
 static void UpdateDrawFrame(void);      // Update and Draw one frame
+                                        
+static Animation loadAnimation(char* fileName, int numFrames, int intervalMs);
+static void drawAnimationFrame(Animation* animation, Vector2 position);
+static void unloadAnimation(Animation* animation);
+
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -106,13 +118,13 @@ int main(void)
     printf("%s\n", GetWorkingDirectory());
 
 #if defined(WIN32)     
-        hive = LoadTexture("../../../src/resources/hive.png");
+        hive = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
         keeperSprites[BACK] = LoadTexture("../../../src/resources/character_back.png");
         keeperSprites[FRONT] = LoadTexture("../../../src/resources/character_front.png");
         keeperSprites[SIDE] = LoadTexture("../../../src/resources/character_side.png");
 #else
-        hive = LoadTexture("resources/hive.png");
+        hive = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
         keeperSprites[BACK] = LoadTexture("resources/character_back.png");
         keeperSprites[FRONT] = LoadTexture("resources/character_front.png");
@@ -146,6 +158,7 @@ int main(void)
     UnloadRenderTexture(target);
 
     // TODO: Unload all loaded resources at this point
+    unloadAnimation(&hive);
 
     CloseWindow();        // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
@@ -156,6 +169,49 @@ int main(void)
 //--------------------------------------------------------------------------------------------
 // Module Functions Definition
 //--------------------------------------------------------------------------------------------
+
+// Load an animation (spritesheet) into memory with a set of animation parameters.
+static Animation loadAnimation(char* fileName, int numFrames, int intervalMs) {
+    Animation a;
+
+    a.texture = LoadTexture(fileName);
+    a.frame = 0;
+    a.intervalMs = intervalMs; 
+    a.numFrames = numFrames;
+    a.lastDraw = 0;
+
+    return a;
+}
+
+// Draw animation frame. Frames should step automatically.
+static void drawAnimationFrame(Animation* animation, Vector2 position) {
+    animation->lastDraw += GetFrameTime();    
+
+    float textureWidth = animation->texture.width;
+    Rectangle frameRec = {
+        textureWidth/animation->numFrames * animation->frame,
+        0,
+        textureWidth/animation->numFrames,
+        animation->texture.height
+    };
+
+    DrawTextureRec(animation->texture, frameRec, position, WHITE);
+
+    if (animation->lastDraw * 1000 > animation->intervalMs) {
+        animation->lastDraw = 0;
+        animation->frame += 1;
+
+        if (animation->frame >= animation->numFrames) {
+            animation->frame = 0;
+        }
+    }
+}
+
+// Unload animation
+static void unloadAnimation(Animation* animation) {
+    UnloadTexture(animation->texture);
+}
+
 // Update and draw frame
 void UpdateDrawFrame(void)
 {
@@ -188,6 +244,8 @@ void UpdateDrawFrame(void)
 
             }
         }
+        default:
+            break;
     }
 
     frameCounter++;
@@ -199,7 +257,7 @@ void UpdateDrawFrame(void)
     // it could be useful for scaling or further shader postprocessing
     BeginTextureMode(target);
     {
-        ClearBackground(RAYWHITE);
+        ClearBackground(GRASSGREEN);
 
         switch (gs->currentScene) {
             case MENU: {
@@ -210,7 +268,9 @@ void UpdateDrawFrame(void)
             }
             case BEEKEEPING: {
                 DrawTexture(keeperSprites[FRONT], gs->playerPosition.x, gs->playerPosition.y, WHITE);
-                DrawTexture(hive, 200, 200, WHITE);
+
+                Vector2 hivePosition = {200, 200};
+                drawAnimationFrame(&hive, hivePosition);
                 break;
             }
             case HIVE: {
@@ -224,7 +284,7 @@ void UpdateDrawFrame(void)
     // Render to screen (main framebuffer)
     BeginDrawing();
     {
-        ClearBackground(RAYWHITE);
+        ClearBackground(GRASSGREEN);
 
         // Draw render texture to screen, scaled if required
         DrawTexturePro(target.texture, (Rectangle) { 0, 0, (float)target.texture.width, -(float)target.texture.height },
