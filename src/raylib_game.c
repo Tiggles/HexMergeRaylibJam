@@ -132,6 +132,7 @@ static Texture2D shopBg;
 static Animation keeperSprites[7];
 static Animation keyZ;
 static Texture2D coin;
+static Texture2D hexOutline;
 static Camera2D gardenCamera;
 static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
@@ -199,6 +200,7 @@ int main(void)
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
         coin = LoadTexture("../../../src/resources/coin.png");
+        hexOutline = LoadTexture("../../../src/resources/hex_outline.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -213,6 +215,7 @@ int main(void)
         shopBg = LoadTexture("resources/shop_bg.png");
         keyZ = loadAnimation("resources/key_z.png", 10, 200);
         coin = LoadTexture("resources/coin.png");
+        hexOutline = LoadTexture("resources/hex_outline.png");
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -267,7 +270,9 @@ static float vector2Distance(Vector2 a, Vector2 b) {
 }
 
 static void drawHex(Vector2 center) {
-    DrawPoly(center, 6, 21, 210, RED);               // Draw a regular polygon (Vector version)
+    int hexMidHeight = hexOutline.height / 2;
+    int hexMidWidth = hexOutline.width / 2;
+    DrawTexture(hexOutline, center.x - hexMidWidth, center.y - hexMidHeight, WHITE);
 }
 
 static void drawGardenHex(Vector2 center) {
