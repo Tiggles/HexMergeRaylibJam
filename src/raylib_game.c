@@ -172,6 +172,7 @@ int main(void)
         hiveSprite = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
+        shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
