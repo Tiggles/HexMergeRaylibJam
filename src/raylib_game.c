@@ -68,14 +68,6 @@ typedef enum {
     RIGHT = 3,
 } KeeperDirection;
 
-struct GameState {
-    enum CurrentScene currentScene;
-    Vector2 playerPosition;
-    KeeperDirection playerDirection;
-    bool playerMoving;
-    bool playerNearShop;
-} GameState;
-
 typedef struct Animation {
     int frame;
     int numFrames;
@@ -86,8 +78,21 @@ typedef struct Animation {
 
 typedef struct Hive {
     Vector2 position;
+    float** hexes;
 } Hive;
 
+struct GameState {
+    enum CurrentScene currentScene;
+    Vector2 playerPosition;
+    KeeperDirection playerDirection;
+    bool playerMoving;
+    bool playerNearShop;
+    Hive **hives;
+    int numHives;
+} GameState;
+
+#define MAX_COLUMNS 14
+#define MAX_ROWS 14
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
@@ -107,7 +112,9 @@ static Texture2D shopBg;
 static Animation keeperSprites[7];
 static Animation keyZ;
 static Camera2D gardenCamera;
-static Hive hives[1];
+static Rectangle HexGridRect = {
+    .x = 73, .y = 73, .width = 575, .height = 415,
+};
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -124,7 +131,9 @@ static float vector2Distance(Vector2, Vector2);
 static Animation loadAnimation(char* fileName, int numFrames, int intervalMs);
 static void drawAnimationFrame(Animation* animation, Vector2 position);
 static void unloadAnimation(Animation* animation);
-
+static void drawHex(Vector2 center);
+static Hive* initHive();
+static void hiveDebugInfo(Hive* hive);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -146,16 +155,18 @@ int main(void)
     gs->playerMoving = false;
     gs->playerNearShop = false;
 
+    gs->hives = malloc(sizeof(Hive*) * 16);
+    gs->hives[0] = initHive();
+    gs->numHives = 0;
+    
+    printf("%s\n", GetWorkingDirectory());
+
+
     // Initialize garden camera
     gardenCamera.target = gs->playerPosition;
     gardenCamera.offset = (Vector2){screenWidth/2.0f, screenHeight/2.0f};
     gardenCamera.rotation = 0.0f;
     gardenCamera.zoom = 2.0f;
-
-    // Initialize first hive
-    hives[0].position = (Vector2){200, 200};
-
-
 
 #if defined(WIN32)     
         hiveSprite = loadAnimation("../../../src/resources/hive.png", 3, 200);
@@ -228,17 +239,19 @@ static float vector2Distance(Vector2 a, Vector2 b) {
     return sqrtf(powf((a.x - b.x), 2) + powf((a.y - b.y), 2));
 }
 
+static void drawHex(Vector2 center) {
+    DrawPoly(center, 6, 21, 210, RED);               // Draw a regular polygon (Vector version)
+}
+
 // Load an animation (spritesheet) into memory with a set of animation parameters.
 static Animation loadAnimation(char* fileName, int numFrames, int intervalMs) {
-    Animation a;
-
-    a.texture = LoadTexture(fileName);
-    a.frame = 0;
-    a.intervalMs = intervalMs; 
-    a.numFrames = numFrames;
-    a.lastDraw = 0;
-
-    return a;
+    return (Animation) {
+        .texture = LoadTexture(fileName),
+        .frame = 0,
+        .intervalMs = intervalMs,
+        .numFrames = numFrames,
+        .lastDraw = 0,
+    };
 }
 
 // Draw animation frame. Frames should step automatically.
@@ -275,15 +288,13 @@ static void drawAnimationFrame(Animation* animation, Vector2 position) {
 
 // Check hive/player collision
 bool isHiveCollision(Vector2 playerPosition) {
-    int numberOfHives = sizeof(hives) / sizeof(hives[0]);
-
     Rectangle playerRec = {
         playerPosition.x-15, playerPosition.y-20, 28, 50,
     };
 
-    for (unsigned int i = 0; i < numberOfHives; i++) {
+    for (unsigned int i = 0; i < gs->numHives; i++) {
         Rectangle hiveRec = {
-            hives[i].position.x-16, hives[i].position.y-5, 30, 10,
+            gs->hives[i]->position.x-16, gs->hives[i]->position.y-5, 30, 10,
         };
 
         if (CheckCollisionRecs(playerRec, hiveRec)) {
@@ -315,9 +326,8 @@ void drawGardenScene(void) {
     DrawTexture(gardenBg, 0, -120, WHITE);
 
     // Draw hives
-    int numberOfHives = sizeof(hives) / sizeof(hives[0]);
-    for (unsigned int i = 0; i < numberOfHives; i++) {
-        Vector2 hiveSpritePosition = {hives[i].position.x-33, hives[i].position.y-35};
+    for (unsigned int i = 0; i < gs->numHives; i++) {
+        Vector2 hiveSpritePosition = {gs->hives[i]->position.x-33, gs->hives[i]->position.y-35};
         drawAnimationFrame(&hiveSprite, hiveSpritePosition);
     }
 
@@ -342,10 +352,10 @@ void drawGardenScene(void) {
 
     // Draw key if close to hive
     // Note: We do this in a different loop, because we want it to render after player.
-    for (unsigned int i = 0; i < numberOfHives; i++) {
-        float distance = vector2Distance(gs->playerPosition, hives[i].position);
+    for (unsigned int i = 0; i < gs->numHives; i++) {
+        float distance = vector2Distance(gs->playerPosition, gs->hives[i]->position);
         if (distance < 100) {
-            Vector2 keyZPos = {hives[i].position.x-8, hives[i].position.y-35};
+            Vector2 keyZPos = {gs->hives[i]->position.x-8, gs->hives[i]->position.y-35};
             drawAnimationFrame(&keyZ, keyZPos);
         }
     }
@@ -435,17 +445,17 @@ void updateGardenScene(void) {
 // Update and draw frame
 void UpdateDrawFrame(void)
 {
-// Update
-//----------------------------------------------------------------------------------
-gs->playerMoving = false;
+    // Update
+    //----------------------------------------------------------------------------------
+    gs->playerMoving = false;
 
 
-if (IsKeyDown(KEY_TAB)) {
-    if (nextSceneChange < 0) {
-        gs->currentScene = (gs->currentScene + 1) % 3;
-        nextSceneChange = 0.2;
-    }
-    nextSceneChange -= GetFrameTime();
+    if (IsKeyDown(KEY_TAB)) {
+        if (nextSceneChange < 0) {
+            gs->currentScene = (gs->currentScene + 1) % 3;
+            nextSceneChange = 0.2;
+        }
+        nextSceneChange -= GetFrameTime();
     }
 
 
@@ -488,6 +498,9 @@ if (IsKeyDown(KEY_TAB)) {
             }
             case HARVEST: {
                 DrawTexture(harvestBg, 0, 0, WHITE);
+                drawHex(GetMousePosition());
+                hiveDebugInfo(gs->hives[0]);
+                DrawRectangleLinesEx(HexGridRect,1, RED);
                 break;
             }
         }
@@ -509,4 +522,34 @@ if (IsKeyDown(KEY_TAB)) {
     }
     EndDrawing();
     //----------------------------------------------------------------------------------  
+}
+
+#define INITIAL_OFFSET_X 12
+#define INITIAL_OFFSET_Y 12
+#define MOD_OFFSET_X  4
+
+static void hiveDebugInfo(Hive* hive) {
+    for (int c = 0; c < MAX_COLUMNS; c++) {
+        for (int r = 0; r < MAX_ROWS; r++) {
+            int posX = INITIAL_OFFSET_X + 90 * c + c % 2 == 0 ? 0 : MOD_OFFSET_X;
+            int posY = INITIAL_OFFSET_Y + 22 * r;
+            DrawText(TextFormat("%f", hive->hexes[c][r]), posX, posY, 4, WHITE);
+        }
+    }
+}
+
+static Hive* initHive() {
+    Hive *h = malloc(sizeof(Hive));
+    h->hexes = malloc(sizeof(size_t) * MAX_COLUMNS);
+    for (int c = 0; c < MAX_COLUMNS; c++) {
+        h->hexes[c] = malloc(sizeof(size_t) * MAX_ROWS);
+        for (int r = 0; r < MAX_ROWS; r++) {
+            h->hexes[c][r] = 0;
+        }
+    }
+
+    h->position = (Vector2){200, 200};
+
+    gs->numHives++;
+    return h;
 }
