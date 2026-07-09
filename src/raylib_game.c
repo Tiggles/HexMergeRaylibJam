@@ -49,7 +49,17 @@ enum CurrentScene {
     GARDEN,
     HARVEST,
     SHOP,
+    BUILD,
 };
+
+typedef enum {
+    BUILD_NULL = 0,
+    BUILD_HIVE = 1,
+    BUILD_ZINNIAS = 2,
+    BUILD_DAHLIAS = 3,
+    BUILD_LAVENDERS = 4,
+    BUILD_SUNFLOWERS = 5,
+} BuildType;
 
 typedef enum {
     BACK = 0,
@@ -77,7 +87,7 @@ typedef struct Animation {
 } Animation;
 
 typedef struct Hive {
-    Vector2 position;
+    Vector2 position; // position on garden hexgrid
     float** hexes;
 } Hive;
 
@@ -89,6 +99,8 @@ struct GameState {
     bool playerNearShop;
     Hive **hives;
     int numHives;
+    int money;
+    BuildType currentlyBuilding;
 } GameState;
 
 #define MAX_COLUMNS 14
@@ -104,6 +116,7 @@ static const Vector2 SHOP_POSITION = {660, -20};
 //static const int HONEYCOMBS_ROWS = 14;
 static const int MOVEMENT_SPEED = 200;
 static const Color GRASSGREEN = {51, 152, 75, 1};
+static const int GARDEN_HEX_SIZE = 30;
 static float nextSceneChange = 0.0;
 static Animation hiveSprite;
 static Texture2D harvestBg;
@@ -111,6 +124,7 @@ static Texture2D gardenBg;
 static Texture2D shopBg;
 static Animation keeperSprites[7];
 static Animation keyZ;
+static Texture2D coin;
 static Camera2D gardenCamera;
 static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
@@ -132,7 +146,7 @@ static Animation loadAnimation(char* fileName, int numFrames, int intervalMs);
 static void drawAnimationFrame(Animation* animation, Vector2 position);
 static void unloadAnimation(Animation* animation);
 static void drawHex(Vector2 center);
-static Hive* initHive();
+static Hive* initHive(unsigned int x, unsigned int y);
 static void hiveDebugInfo(Hive* hive);
 
 //------------------------------------------------------------------------------------
@@ -154,13 +168,14 @@ int main(void)
     gs->playerDirection = DOWN;
     gs->playerMoving = false;
     gs->playerNearShop = false;
+    gs->money = 5000;
+    gs->currentlyBuilding = BUILD_NULL;
 
     gs->hives = malloc(sizeof(Hive*) * 16);
-    gs->hives[0] = initHive();
     gs->numHives = 0;
+    gs->hives[0] = initHive(2, 5);
     
     printf("%s\n", GetWorkingDirectory());
-
 
     // Initialize garden camera
     gardenCamera.target = gs->playerPosition;
@@ -174,6 +189,7 @@ int main(void)
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
+        coin = LoadTexture("../../../src/resources/coin.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -187,6 +203,7 @@ int main(void)
         gardenBg = LoadTexture("resources/garden_bg.png");
         shopBg = LoadTexture("resources/shop_bg.png");
         keyZ = loadAnimation("resources/key_z.png", 10, 200);
+        coin = LoadTexture("resources/coin.png");
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -242,6 +259,14 @@ static float vector2Distance(Vector2 a, Vector2 b) {
 
 static void drawHex(Vector2 center) {
     DrawPoly(center, 6, 21, 210, RED);               // Draw a regular polygon (Vector version)
+}
+
+static void drawGardenHex(Vector2 center) {
+    DrawPolyLines(center, 6, 30, 210, DARKGRAY);
+}
+
+static void drawGardenHexFilled(Vector2 center, Color color) {
+    DrawPoly(center, 6, 30, 210, color);
 }
 
 // Load an animation (spritesheet) into memory with a set of animation parameters.
@@ -310,14 +335,117 @@ static void unloadAnimation(Animation* animation) {
     UnloadTexture(animation->texture);
 }
 
+// Returns the pixel coordinates for the garden hexgrid based on the hexgrid coordinates
+Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates) {
+    int column = hexCoordinates.x;
+    int row = hexCoordinates.y;
+    return (Vector2){
+        50 + sqrt(3) * GARDEN_HEX_SIZE * column + (row % 2) * sqrt(3) * GARDEN_HEX_SIZE / 2,
+        110 + 3/2.0f * GARDEN_HEX_SIZE * row,
+    };
+}
 
+// Return nearest hex coordinates from pixel point
+// TODO: Definitely there is a better way to do this.
+Vector2 gardenHexFromPoint(Vector2 point) {
+    Vector2 closest;
+    int closestDistance = 9999;
+
+    for (unsigned int row = 0; row < 13; row++) {
+        int numColumns = 13;
+        if (row % 2 == 1) numColumns = 12;
+        for (unsigned int column = 0; column < numColumns; column++) {
+            Vector2 hexCoord = {column, row};
+            Vector2 pixelCoord = gardenHexPositionToPixelPosition(hexCoord);            
+
+            int distance = vector2Distance(pixelCoord, point);
+            if (distance < GARDEN_HEX_SIZE) {
+                return hexCoord;
+            }
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closest = hexCoord;
+            }
+        }
+    }
+
+    return closest;
+}
+
+void drawHives(void) {
+    for (unsigned int i = 0; i < gs->numHives; i++) {
+        Vector2 hivePixelPosition = gardenHexPositionToPixelPosition(gs->hives[i]->position);
+        hivePixelPosition.x -= 32;
+        hivePixelPosition.y -= 55;
+        drawAnimationFrame(&hiveSprite, hivePixelPosition);
+    }
+}
 
 void drawShopScene(void) {
     // Draw background
     DrawTexture(shopBg, 0, 0, WHITE);
 }
-// 
-//
+
+void drawBuildScene(void) {
+    SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
+    Vector2 cursor = GetMousePosition(); 
+
+    // Draw background
+    DrawTexture(gardenBg, 0, -110, WHITE);
+
+    // Draw hexgrid
+    for (unsigned int row = 0; row < 13; row++) {
+        int numColumns = 13;
+        if (row % 2 == 1) numColumns = 12;
+
+        for (unsigned int column = 0; column < numColumns; column++) {
+            Vector2 hexPos = gardenHexPositionToPixelPosition((Vector2){column, row});
+
+            drawGardenHex(hexPos);
+        }        
+    }
+
+    // Draw hives
+    drawHives();
+
+    // Draw build 
+    switch (gs->currentlyBuilding) {
+        case BUILD_HIVE: {
+            Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+            Vector2 chosenHexPixelCoord = gardenHexPositionToPixelPosition(chosenHexCoord);
+            drawGardenHexFilled(chosenHexPixelCoord, SKYBLUE); 
+            drawAnimationFrame(&hiveSprite, (Vector2){chosenHexPixelCoord.x - 32, chosenHexPixelCoord.y - 55});
+            break;
+        }
+        default: {
+            // TODO
+            break;
+        }
+    }
+}
+
+void updateBuildScene(void) {
+    Vector2 cursor = GetMousePosition(); 
+
+    switch (gs->currentlyBuilding) {
+        case BUILD_HIVE: {
+            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+
+                gs->hives[gs->numHives] = initHive(chosenHexCoord.x, chosenHexCoord.y);
+                gs->money -= 1000; // TODO
+                gs->currentScene = GARDEN;
+            }
+        
+            break;
+        }
+        default: {
+            // TODO
+        }    
+    }
+}
+
 void drawGardenScene(void) {
     KeeperSprite keeperSprite = FRONT;
 
@@ -327,10 +455,7 @@ void drawGardenScene(void) {
     DrawTexture(gardenBg, 0, -120, WHITE);
 
     // Draw hives
-    for (unsigned int i = 0; i < gs->numHives; i++) {
-        Vector2 hiveSpritePosition = {gs->hives[i]->position.x-33, gs->hives[i]->position.y-35};
-        drawAnimationFrame(&hiveSprite, hiveSpritePosition);
-    }
+    drawHives();
 
     // Draw player
     switch (gs->playerDirection) {
@@ -354,12 +479,28 @@ void drawGardenScene(void) {
     // Draw key if close to hive
     // Note: We do this in a different loop, because we want it to render after player.
     for (unsigned int i = 0; i < gs->numHives; i++) {
-        float distance = vector2Distance(gs->playerPosition, gs->hives[i]->position);
+        Vector2 hivePixelPos = gardenHexPositionToPixelPosition(gs->hives[i]->position);
+        float distance = vector2Distance(gs->playerPosition, hivePixelPos);
         if (distance < 100) {
-            Vector2 keyZPos = {gs->hives[i]->position.x-8, gs->hives[i]->position.y-35};
+            Vector2 keyZPos = hivePixelPos;
+            keyZPos.x -= 8;
+            keyZPos.y -= 42;
             drawAnimationFrame(&keyZ, keyZPos);
         }
     }
+
+    // Draw hexgrid (FOR TESTING)
+    /*for (unsigned int row = 0; row < 13; row++) {
+        int numColumns = 13;
+        if (row % 2 == 1) numColumns = 12;
+
+        for (unsigned int column = 0; column < numColumns; column++) {
+            drawGardenHex((Vector2){
+                50+sqrt(3)*GARDEN_HEX_SIZE*column + (row % 2) * sqrt(3) * GARDEN_HEX_SIZE / 2,
+                110+3/2.0f*GARDEN_HEX_SIZE*row
+            });
+        }        
+    }*/
     
     // Draw key if close to shop
     if (gs->playerNearShop) {
@@ -369,11 +510,44 @@ void drawGardenScene(void) {
     EndMode2D();
 }
 
-
 void updateShopScene(void) {
+    SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+    Vector2 cursor = GetMousePosition(); 
     
-}
+    Rectangle exitButtonRec = {584, 27, 103, 34};
+    Rectangle purchaseButtons[5];
+    purchaseButtons[0] = (Rectangle){605, 161, 82, 34};
+    purchaseButtons[1] = (Rectangle){605, 280, 82, 34};
+    purchaseButtons[2] = (Rectangle){605, 399, 82, 34};
+    purchaseButtons[3] = (Rectangle){605, 518, 82, 34};
+    purchaseButtons[4] = (Rectangle){605, 637, 82, 34};
 
+
+    if (CheckCollisionPointRec(cursor, exitButtonRec)) {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            gs->currentScene = GARDEN;
+        }
+    }
+
+    for (unsigned int i = 0; i < 5; i++) {
+        if (CheckCollisionPointRec(cursor, purchaseButtons[i])) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        }
+
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            gs->currentScene = BUILD;
+
+            if (i == 0) {
+                gs->currentlyBuilding = BUILD_HIVE;
+            } else if (i == 1) {
+                gs->currentlyBuilding = BUILD_ZINNIAS;
+            }
+            break;
+        }
+    }
+}
 
 void updateGardenScene(void) {
     gs->playerNearShop = false;
@@ -442,6 +616,15 @@ void updateGardenScene(void) {
     }
 }
 
+void drawHud(void) {
+    char moneyString[10];
+    sprintf(moneyString, "%d", gs->money);
+
+    int stringSize = MeasureText(moneyString, 20);
+    DrawTexture(coin, 670-stringSize, 690, WHITE); 
+    DrawText(moneyString, 690-stringSize, 689, 20, WHITE);
+}
+
 
 // Update and draw frame
 void UpdateDrawFrame(void)
@@ -453,7 +636,7 @@ void UpdateDrawFrame(void)
 
     if (IsKeyDown(KEY_TAB)) {
         if (nextSceneChange < 0) {
-            gs->currentScene = (gs->currentScene + 1) % 3;
+            gs->currentScene = (gs->currentScene + 1) % 5;
             nextSceneChange = 0.2;
         }
         nextSceneChange -= GetFrameTime();
@@ -466,6 +649,10 @@ void UpdateDrawFrame(void)
             break;
         case SHOP:
             updateShopScene();
+            break;
+        case BUILD:
+            updateBuildScene();
+            break;
         default:
             // TODO
             break;
@@ -497,6 +684,10 @@ void UpdateDrawFrame(void)
                 drawShopScene();               
                 break;
             }
+            case BUILD: {
+                drawBuildScene();
+                break;
+            }
             case HARVEST: {
                 DrawTexture(harvestBg, 0, 0, WHITE);
                 drawHex(GetMousePosition());
@@ -520,6 +711,7 @@ void UpdateDrawFrame(void)
         }, (Vector2) { 0, 0 }, 0.0f, WHITE);
 
         // TODO: Draw everything that requires to be drawn at this point, maybe UI?
+        drawHud();
     }
     EndDrawing();
     //----------------------------------------------------------------------------------  
@@ -539,7 +731,7 @@ static void hiveDebugInfo(Hive* hive) {
     }
 }
 
-static Hive* initHive() {
+static Hive* initHive(unsigned int x, unsigned int y) {
     Hive *h = malloc(sizeof(Hive));
     h->hexes = malloc(sizeof(size_t) * MAX_COLUMNS);
     for (int c = 0; c < MAX_COLUMNS; c++) {
@@ -549,7 +741,7 @@ static Hive* initHive() {
         }
     }
 
-    h->position = (Vector2){200, 200};
+    h->position = (Vector2){x, y};
 
     gs->numHives++;
     return h;
