@@ -18,7 +18,7 @@
 #include <stdio.h>                          // Required for: printf()
 #include <stdlib.h>                         // Required for: 
 #include <string.h>                         // Required for:
-#include <math.h>                           // Required for: sqrt, to calculate euclidean distance
+#include <math.h>                           // Required for: sqrt(), powf()
 
 //----------------------------------------------------------------------------------
 // Defines and Macros
@@ -47,7 +47,8 @@ typedef enum {
 enum CurrentScene {
     MENU,
     GARDEN,
-    HIVE,
+    HARVEST,
+    SHOP,
 };
 
 typedef enum {
@@ -72,6 +73,7 @@ struct GameState {
     Vector2 playerPosition;
     KeeperDirection playerDirection;
     bool playerMoving;
+    bool playerNearShop;
 } GameState;
 
 typedef struct Animation {
@@ -82,22 +84,30 @@ typedef struct Animation {
     Texture2D texture;
 } Animation;
 
+typedef struct Hive {
+    Vector2 position;
+} Hive;
+
+
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
 //----------------------------------------------------------------------------------
 static const int screenWidth = 720;
 static const int screenHeight = 720;
+static const Vector2 SHOP_POSITION = {660, -20};
 //static const int HONEYCOMBS_COLUMNS = 16;
 //static const int HONEYCOMBS_ROWS = 14;
 static const int MOVEMENT_SPEED = 200;
 static const Color GRASSGREEN = {51, 152, 75, 1};
 static float nextSceneChange = 0.0;
-static Animation hive;
+static Animation hiveSprite;
 static Texture2D harvestBg;
 static Texture2D gardenBg;
+static Texture2D shopBg;
 static Animation keeperSprites[7];
 static Animation keyZ;
 static Camera2D gardenCamera;
+static Hive hives[1];
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -134,17 +144,21 @@ int main(void)
     gs->playerPosition = (Vector2){ 100,100 };
     gs->playerDirection = DOWN;
     gs->playerMoving = false;
+    gs->playerNearShop = false;
 
-    printf("%s\n", GetWorkingDirectory());
-
+    // Initialize garden camera
     gardenCamera.target = gs->playerPosition;
     gardenCamera.offset = (Vector2){screenWidth/2.0f, screenHeight/2.0f};
     gardenCamera.rotation = 0.0f;
     gardenCamera.zoom = 2.0f;
 
+    // Initialize first hive
+    hives[0].position = (Vector2){200, 200};
+
+
 
 #if defined(WIN32)     
-        hive = loadAnimation("../../../src/resources/hive.png", 3, 200);
+        hiveSprite = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
@@ -156,9 +170,10 @@ int main(void)
         keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 4, 200);
         keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 4, 200);
 #else
-        hive = loadAnimation("resources/hive.png", 3, 200);
+        hiveSprite = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
         gardenBg = LoadTexture("resources/garden_bg.png");
+        shopBg = LoadTexture("resources/shop_bg.png");
         keyZ = loadAnimation("resources/key_z.png", 10, 200);
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
@@ -196,7 +211,7 @@ int main(void)
     UnloadRenderTexture(target);
 
     // TODO: Unload all loaded resources at this point
-    unloadAnimation(&hive);
+    unloadAnimation(&hiveSprite);
 
     CloseWindow();        // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
@@ -258,23 +273,53 @@ static void drawAnimationFrame(Animation* animation, Vector2 position) {
     }
 }
 
+// Check hive/player collision
+bool isHiveCollision(Vector2 playerPosition) {
+    int numberOfHives = sizeof(hives) / sizeof(hives[0]);
+
+    Rectangle playerRec = {
+        playerPosition.x-15, playerPosition.y-20, 28, 50,
+    };
+
+    for (unsigned int i = 0; i < numberOfHives; i++) {
+        Rectangle hiveRec = {
+            hives[i].position.x-16, hives[i].position.y-5, 30, 10,
+        };
+
+        if (CheckCollisionRecs(playerRec, hiveRec)) {
+            return true;
+        }
+    }         
+    return false;
+}
+
 // Unload animation
 static void unloadAnimation(Animation* animation) {
     UnloadTexture(animation->texture);
 }
 
+
+
+void drawShopScene(void) {
+    // Draw background
+    DrawTexture(shopBg, 0, 0, WHITE);
+}
 // 
 //
 void drawGardenScene(void) {
     KeeperSprite keeperSprite = FRONT;
 
-    gardenCamera.target = gs->playerPosition;
-
-
     BeginMode2D(gardenCamera); 
 
     // Draw background
-    DrawTexture(gardenBg, 0, 0, WHITE);
+    DrawTexture(gardenBg, 0, -120, WHITE);
+
+    // Draw hives
+    int numberOfHives = sizeof(hives) / sizeof(hives[0]);
+    for (unsigned int i = 0; i < numberOfHives; i++) {
+        Vector2 hiveSpritePosition = {hives[i].position.x-33, hives[i].position.y-35};
+        drawAnimationFrame(&hiveSprite, hiveSpritePosition);
+    }
 
     // Draw player
     switch (gs->playerDirection) {
@@ -295,20 +340,95 @@ void drawGardenScene(void) {
     Vector2 playerSpritePosition = {gs->playerPosition.x-24, gs->playerPosition.y-28};
     drawAnimationFrame(&keeperSprites[keeperSprite], playerSpritePosition);
 
+    // Draw key if close to hive
+    // Note: We do this in a different loop, because we want it to render after player.
+    for (unsigned int i = 0; i < numberOfHives; i++) {
+        float distance = vector2Distance(gs->playerPosition, hives[i].position);
+        if (distance < 100) {
+            Vector2 keyZPos = {hives[i].position.x-8, hives[i].position.y-35};
+            drawAnimationFrame(&keyZ, keyZPos);
+        }
+    }
     
-    // Draw hive
-    Vector2 hivePosition = {200, 200};
-    Vector2 hiveSpritePosition = {hivePosition.x-33, hivePosition.y-35};
-    drawAnimationFrame(&hive, hiveSpritePosition);
-
-    // Draw key
-    float distance = vector2Distance(gs->playerPosition, hivePosition);
-    if (distance < 100) {
-        Vector2 keyZPos = {192, 165};
-        drawAnimationFrame(&keyZ, keyZPos);
+    // Draw key if close to shop
+    if (gs->playerNearShop) {
+        drawAnimationFrame(&keyZ, SHOP_POSITION);
     }
 
     EndMode2D();
+}
+
+
+void updateShopScene(void) {
+    
+}
+
+
+void updateGardenScene(void) {
+    gs->playerNearShop = false;
+
+    // Update camera
+    static Vector2 bbox = { 0.2f, 0.2f };
+
+    int width = 720;
+    int height = 720;
+
+    Vector2 bboxWorldMin = GetScreenToWorld2D((Vector2){ (1 - bbox.x)*0.5f*width, (1 - bbox.y)*0.5f*height }, gardenCamera);
+    Vector2 bboxWorldMax = GetScreenToWorld2D((Vector2){ (1 + bbox.x)*0.5f*width, (1 + bbox.y)*0.5f*height }, gardenCamera);
+    gardenCamera.offset = (Vector2){ (1 - bbox.x)*0.5f*width, (1 - bbox.y)*0.5f*height };
+
+    if (gs->playerPosition.x < bboxWorldMin.x) gardenCamera.target.x = gs->playerPosition.x;
+    if (gs->playerPosition.y < bboxWorldMin.y) gardenCamera.target.y = gs->playerPosition.y;
+    if (gs->playerPosition.x > bboxWorldMax.x) gardenCamera.target.x = bboxWorldMin.x + (gs->playerPosition.x - bboxWorldMax.x);
+    if (gs->playerPosition.y > bboxWorldMax.y) gardenCamera.target.y = bboxWorldMin.y + (gs->playerPosition.y - bboxWorldMax.y);
+
+    float distance = vector2Distance(gs->playerPosition, SHOP_POSITION);
+    if (distance < 100) {
+        gs->playerNearShop = true;
+    }
+
+    Vector2 newPlayerPosition = gs->playerPosition;
+
+    // Keybindings
+    if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
+        if (gs->playerPosition.y + MOVEMENT_SPEED * GetFrameTime() < 660) {
+            newPlayerPosition.y += MOVEMENT_SPEED * GetFrameTime();
+        }
+        gs->playerDirection = DOWN;
+        gs->playerMoving = true;
+    }
+    if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
+        if (gs->playerPosition.y - MOVEMENT_SPEED * GetFrameTime() > 30) {
+            newPlayerPosition.y -= MOVEMENT_SPEED * GetFrameTime();
+        }
+        gs->playerDirection = UP;
+        gs->playerMoving = true;
+    }
+    if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
+        if (gs->playerPosition.x - MOVEMENT_SPEED * GetFrameTime() > 15) {
+            newPlayerPosition.x -= MOVEMENT_SPEED * GetFrameTime();
+        }
+        gs->playerDirection = LEFT;
+        gs->playerMoving = true;
+    }
+    if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
+        if (gs->playerPosition.x + MOVEMENT_SPEED * GetFrameTime() < 710) {
+            newPlayerPosition.x += MOVEMENT_SPEED * GetFrameTime();
+        }
+        gs->playerDirection = RIGHT;
+        gs->playerMoving = true;
+    }
+
+    // Check if new suggested position is colliding with hive
+    if (!isHiveCollision(newPlayerPosition)) {
+        gs->playerPosition = newPlayerPosition;
+    }
+
+    if (IsKeyPressed(KEY_Z)) {
+        if (gs->playerNearShop) {
+           gs->currentScene = SHOP; 
+        }
+    }
 }
 
 
@@ -330,36 +450,11 @@ if (IsKeyDown(KEY_TAB)) {
 
 
     switch (gs->currentScene) {
-        case GARDEN: {
-            if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
-                if (gs->playerPosition.y + MOVEMENT_SPEED * GetFrameTime() < 660) {
-                    gs->playerPosition.y += MOVEMENT_SPEED * GetFrameTime();
-                }
-                gs->playerDirection = DOWN;
-                gs->playerMoving = true;
-            }
-            if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
-                if (gs->playerPosition.y - MOVEMENT_SPEED * GetFrameTime() > 30) {
-                    gs->playerPosition.y -= MOVEMENT_SPEED * GetFrameTime();
-                }
-                gs->playerDirection = UP;
-                gs->playerMoving = true;
-            }
-            if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
-                if (gs->playerPosition.x - MOVEMENT_SPEED * GetFrameTime() > 15) {
-                    gs->playerPosition.x -= MOVEMENT_SPEED * GetFrameTime();
-                }
-                gs->playerDirection = LEFT;
-                gs->playerMoving = true;
-            }
-            if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
-                if (gs->playerPosition.x + MOVEMENT_SPEED * GetFrameTime() < 710) {
-                    gs->playerPosition.x += MOVEMENT_SPEED * GetFrameTime();
-                }
-                gs->playerDirection = RIGHT;
-                gs->playerMoving = true;
-            }
-        }
+        case GARDEN:
+            updateGardenScene();
+            break;
+        case SHOP:
+            updateShopScene();
         default:
             // TODO
             break;
@@ -387,7 +482,11 @@ if (IsKeyDown(KEY_TAB)) {
                 drawGardenScene(); 
                 break;
             }
-            case HIVE: {
+            case SHOP: {
+                drawShopScene();               
+                break;
+            }
+            case HARVEST: {
                 DrawTexture(harvestBg, 0, 0, WHITE);
                 break;
             }
