@@ -117,6 +117,13 @@ static const Vector2 SHOP_POSITION = {660, -20};
 static const int MOVEMENT_SPEED = 200;
 static const Color GRASSGREEN = {51, 152, 75, 1};
 static const int GARDEN_HEX_SIZE = 30;
+static const int HIVE_PRICE = 10000;
+static const int ZINNIAS_PRICE = 500;
+static const int DAHLIAS_PRICE = 1000;
+static const int LAVENDERS_PRICE = 2000;
+static const int SUNFLOWERS_PRICE = 5000;
+static const int STARTING_MONEY = 5000;
+
 static float nextSceneChange = 0.0;
 static Animation hiveSprite;
 static Texture2D harvestBg;
@@ -148,6 +155,8 @@ static void unloadAnimation(Animation* animation);
 static void drawHex(Vector2 center);
 static Hive* initHive(unsigned int x, unsigned int y);
 static void hiveDebugInfo(Hive* hive);
+static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
+static Vector2 gardenHexFromPoint(Vector2 point);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -168,7 +177,7 @@ int main(void)
     gs->playerDirection = DOWN;
     gs->playerMoving = false;
     gs->playerNearShop = false;
-    gs->money = 5000;
+    gs->money = STARTING_MONEY;
     gs->currentlyBuilding = BUILD_NULL;
 
     gs->hives = malloc(sizeof(Hive*) * 16);
@@ -319,8 +328,10 @@ bool isHiveCollision(Vector2 playerPosition) {
     };
 
     for (unsigned int i = 0; i < gs->numHives; i++) {
+        Vector2 hivePixelPosition = gardenHexPositionToPixelPosition((Vector2){gs->hives[i]->position.x, gs->hives[i]->position.y});
+
         Rectangle hiveRec = {
-            gs->hives[i]->position.x-16, gs->hives[i]->position.y-5, 30, 10,
+            hivePixelPosition.x-16, hivePixelPosition.y-22, 30, 10,
         };
 
         if (CheckCollisionRecs(playerRec, hiveRec)) {
@@ -336,18 +347,18 @@ static void unloadAnimation(Animation* animation) {
 }
 
 // Returns the pixel coordinates for the garden hexgrid based on the hexgrid coordinates
-Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates) {
+static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates) {
     int column = hexCoordinates.x;
     int row = hexCoordinates.y;
     return (Vector2){
         50 + sqrt(3) * GARDEN_HEX_SIZE * column + (row % 2) * sqrt(3) * GARDEN_HEX_SIZE / 2,
-        110 + 3/2.0f * GARDEN_HEX_SIZE * row,
+        130 + 3/2.0f * GARDEN_HEX_SIZE * row,
     };
 }
 
 // Return nearest hex coordinates from pixel point
 // TODO: Definitely there is a better way to do this.
-Vector2 gardenHexFromPoint(Vector2 point) {
+static Vector2 gardenHexFromPoint(Vector2 point) {
     Vector2 closest;
     int closestDistance = 9999;
 
@@ -385,6 +396,44 @@ void drawHives(void) {
 void drawShopScene(void) {
     // Draw background
     DrawTexture(shopBg, 0, 0, WHITE);
+
+    // Draw prices
+    DrawTexture(coin, 500, 170, WHITE);
+    if (gs->money >= 10000) {
+        DrawText("10000", 520, 170, 20, BLACK);
+    } else {
+        DrawText("10000", 520, 170, 20, RED);
+    }
+
+    DrawTexture(coin, 500, 289, WHITE);
+    if(gs->money >= 500) {
+        DrawText("500", 520, 289, 20, BLACK);
+    } else {
+        DrawText("500", 520, 289, 20, RED);
+    }
+
+    DrawTexture(coin, 500, 408, WHITE);
+    if(gs->money >= 1000) {
+        DrawText("1000", 520, 408, 20, BLACK);
+    } else {
+        DrawText("1000", 520, 408, 20, RED);
+    }
+
+    DrawTexture(coin, 500, 527, WHITE);
+    if(gs->money >= 2000) {
+        DrawText("2000", 520, 527, 20, BLACK);
+    } else {
+        DrawText("2000", 520, 527, 20, RED);
+    }
+
+    DrawTexture(coin, 500, 646, WHITE);
+    if(gs->money >= 5000) {
+        DrawText("5000", 520, 646, 20, BLACK);
+    } else {
+        DrawText("5000", 520, 646, 20, RED);
+    }
+
+
 }
 
 void drawBuildScene(void) {
@@ -489,19 +538,6 @@ void drawGardenScene(void) {
         }
     }
 
-    // Draw hexgrid (FOR TESTING)
-    /*for (unsigned int row = 0; row < 13; row++) {
-        int numColumns = 13;
-        if (row % 2 == 1) numColumns = 12;
-
-        for (unsigned int column = 0; column < numColumns; column++) {
-            drawGardenHex((Vector2){
-                50+sqrt(3)*GARDEN_HEX_SIZE*column + (row % 2) * sqrt(3) * GARDEN_HEX_SIZE / 2,
-                110+3/2.0f*GARDEN_HEX_SIZE*row
-            });
-        }        
-    }*/
-    
     // Draw key if close to shop
     if (gs->playerNearShop) {
         drawAnimationFrame(&keyZ, SHOP_POSITION);
@@ -528,22 +564,45 @@ void updateShopScene(void) {
 
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
             gs->currentScene = GARDEN;
+            return;
         }
     }
 
     for (unsigned int i = 0; i < 5; i++) {
         if (CheckCollisionPointRec(cursor, purchaseButtons[i])) {
             SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+
+            if (i == 0 && gs->money < HIVE_PRICE) {
+                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
+            } else if (i == 1 && gs->money < ZINNIAS_PRICE) {
+                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
+            } else if (i == 2 && gs->money < DAHLIAS_PRICE) {
+                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
+            } else if (i == 3 && gs->money < LAVENDERS_PRICE) {
+                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
+            } else if (i == 4 && gs->money < SUNFLOWERS_PRICE) {
+                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
+           }
         }
 
         if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            gs->currentScene = BUILD;
-
-            if (i == 0) {
+            if (i == 0 && gs->money >= HIVE_PRICE) {
+                gs->currentScene = BUILD;
                 gs->currentlyBuilding = BUILD_HIVE;
-            } else if (i == 1) {
+            } else if (i == 1 && gs->money >= ZINNIAS_PRICE) {
+                gs->currentScene = BUILD;
                 gs->currentlyBuilding = BUILD_ZINNIAS;
+            } else if (i == 2 && gs->money >= DAHLIAS_PRICE) {
+                gs->currentScene = BUILD;
+                gs->currentlyBuilding = BUILD_DAHLIAS;
+            } else if (i == 3 && gs->money >= LAVENDERS_PRICE) {
+                gs->currentScene = BUILD;
+                gs->currentlyBuilding = BUILD_LAVENDERS;
+            } else if (i == 4 && gs->money >= SUNFLOWERS_PRICE) {
+                gs->currentScene = BUILD;
+                gs->currentlyBuilding = BUILD_SUNFLOWERS;
             }
+ 
             break;
         }
     }
