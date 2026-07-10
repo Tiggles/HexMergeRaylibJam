@@ -50,6 +50,7 @@ enum CurrentScene {
     HARVEST,
     SHOP,
     BUILD,
+    ABOUT,
 };
 
 typedef enum {
@@ -85,6 +86,13 @@ typedef struct Animation {
     float lastDraw;
     Texture2D texture;
 } Animation;
+
+// A button with hover
+typedef struct Button {
+    Texture2D texture;
+    bool isHovered;
+    Vector2 position;
+} Button;
 
 typedef struct Hive {
     Vector2 position; // position on garden hexgrid
@@ -127,6 +135,7 @@ static const int STARTING_MONEY = 5000;
 static float nextSceneChange = 0.0;
 static Animation hiveSprite;
 static Texture2D harvestBg;
+static Texture2D menuBg;
 static Texture2D gardenBg;
 static Texture2D shopBg;
 static Animation keeperSprites[7];
@@ -137,6 +146,10 @@ static Camera2D gardenCamera;
 static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
 };
+
+static Button startButton;
+static Button menuButton;
+static Button aboutButton;
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -158,6 +171,8 @@ static Hive* initHive(unsigned int x, unsigned int y);
 static void hiveDebugInfo(Hive* hive);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
+
+static void drawButton(Button* button);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -196,11 +211,15 @@ int main(void)
 #if defined(WIN32)     
         hiveSprite = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
+        menuBg = LoadTexture("../../../src/resources/start_button.png");
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
         coin = LoadTexture("../../../src/resources/coin.png");
         hexOutline = LoadTexture("../../../src/resources/hex_outline.png");
+        startButton.texture = LoadTexture("../../../src/resources/start_button.png");
+        menuButton.texture = LoadTexture("../../../src/resources/menu_button.png");
+        aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -211,11 +230,15 @@ int main(void)
 #else
         hiveSprite = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
+        menuBg = LoadTexture("resources/menu_bg.png");
         gardenBg = LoadTexture("resources/garden_bg.png");
         shopBg = LoadTexture("resources/shop_bg.png");
         keyZ = loadAnimation("resources/key_z.png", 10, 200);
         coin = LoadTexture("resources/coin.png");
         hexOutline = LoadTexture("resources/hex_outline.png");
+        startButton.texture = LoadTexture("resources/start_button.png");
+        menuButton.texture = LoadTexture("resources/menu_button.png");
+        aboutButton.texture = LoadTexture("resources/about_button.png");
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -226,6 +249,11 @@ int main(void)
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
+    
+    // Initialize buttons
+    startButton.position = (Vector2){20, 600};
+    menuButton.position = (Vector2){20, 600};
+    aboutButton.position = (Vector2){122, 600};
 
     // TODO: Load resources / Initialize variables at this point
 
@@ -681,12 +709,60 @@ void updateGardenScene(void) {
 }
 
 void drawHud(void) {
+    if (gs->currentScene == MENU) {
+        return;
+    }
+
     char moneyString[10];
     sprintf(moneyString, "%d", gs->money);
 
     int stringSize = MeasureText(moneyString, 20);
     DrawTexture(coin, 670-stringSize, 690, WHITE); 
     DrawText(moneyString, 690-stringSize, 689, 20, WHITE);
+}
+
+static void drawButton(Button* button) {
+    int buttonWidth = button->texture.width / 2;
+    Rectangle buttonRec = {0, 0, buttonWidth, button->texture.height};
+
+    if (button->isHovered) {
+        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+        buttonRec.x = buttonWidth;
+    }
+
+    DrawTextureRec(button->texture, buttonRec, button->position, WHITE);
+}
+
+void drawMenu(void) {
+    // Draw background 
+    DrawTexture(menuBg, 0, 0, WHITE);
+
+    // Draw buttons
+    drawButton(&startButton);
+    drawButton(&aboutButton);
+}
+
+void updateMenu(void) {
+    Vector2 cursor = GetMousePosition();
+    startButton.isHovered = false;
+    aboutButton.isHovered = false;
+
+    if (vector2Distance(cursor, (Vector2){startButton.position.x + 50, startButton.position.y + 50}) < 50) {
+        startButton.isHovered = true; 
+
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            gs->currentScene = GARDEN;
+        }
+    }
+
+    if (vector2Distance(cursor, (Vector2){aboutButton.position.x + 50, aboutButton.position.y + 50}) < 50) {
+        aboutButton.isHovered = true; 
+
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            gs->currentScene = ABOUT;
+        }
+    }
+
 }
 
 
@@ -696,6 +772,7 @@ void UpdateDrawFrame(void)
     // Update
     //----------------------------------------------------------------------------------
     gs->playerMoving = false;
+    SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
 
     if (IsKeyDown(KEY_TAB)) {
@@ -717,6 +794,12 @@ void UpdateDrawFrame(void)
         case BUILD:
             updateBuildScene();
             break;
+        case MENU:
+            updateMenu();
+            break;
+        case ABOUT:
+            updateMenu();
+            break;
         default:
             // TODO
             break;
@@ -735,9 +818,7 @@ void UpdateDrawFrame(void)
 
         switch (gs->currentScene) {
             case MENU: {
-                // TODO
-                DrawText("This is supposed to be the menu. Sorry!", 50, 50, 28, BLACK);
-                DrawText("Press <TAB> to cycle scenes (that don't do anything, really)", 50, 150, 18, BLACK);
+                drawMenu();
                 break;
             }
             case GARDEN: {
@@ -757,6 +838,9 @@ void UpdateDrawFrame(void)
                 drawHex(GetMousePosition());
                 hiveDebugInfo(gs->hives[0]);
                 DrawRectangleLinesEx(HexGridRect,1, RED);
+                break;
+            }
+            case ABOUT: {
                 break;
             }
         }
