@@ -195,6 +195,7 @@ static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
 static Vector2 mouseToHexPointCoordinates();
+static Vector2 hexDrawingCoordinates(Vector2 pos);
 
 static void drawButton(Button* button);
 
@@ -336,11 +337,16 @@ static float vector2Distance(Vector2 a, Vector2 b) {
 static void drawHex() {
     Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
     if (point.x == -1 || point.y == -1) return;
-    int evenColumn = ((int)point.y) % 2 == 0; 
-    int xOffset = (evenColumn ? 5 : UNEVEN_ROW_X_OFFSET) + (SMALL_DELTA_BETWEEN_HEXES * point.x);
-    int x = hexOutline.width * point.x + HexGridRect.x + (xOffset);
-    int y = (hexOutline.height - 9) * point.y + HexGridRect.y + (SMALL_DELTA_BETWEEN_HEXES * point.y);
-    DrawTexture(hexOutline, x, y, WHITE);
+    Vector2 pos = hexDrawingCoordinates(point);
+    DrawTexture(hexOutline, pos.x, pos.y, WHITE);
+}
+
+static Vector2 hexDrawingCoordinates(Vector2 pos) {
+    int evenColumn = ((int)pos.y) % 2 == 0; 
+    int xOffset = (evenColumn ? 5 : UNEVEN_ROW_X_OFFSET) + (SMALL_DELTA_BETWEEN_HEXES * pos.x);
+    int x = hexOutline.width * pos.x + HexGridRect.x + (xOffset);
+    int y = (hexOutline.height - 9) * pos.y + HexGridRect.y + (SMALL_DELTA_BETWEEN_HEXES * pos.y);
+    return (Vector2){.x = x, .y = y};
 }
 
 static void drawGardenHex(Vector2 center) {
