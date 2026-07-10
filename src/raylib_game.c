@@ -1011,7 +1011,7 @@ Vector2 mouseToHexPointCoordinates() {
     int row = (mouse.x - HexGridRect.x) / widthOfHex; 
     return (Vector2) {
         .x = row >= 14 ? 14 : row,
-        .y = column > COLUMN_COUNT ? COLUMN_COUNT - 1 : column,
+        .y = column > COLUMN_COUNT - 1 ? COLUMN_COUNT - 1 : column,
     };
 }
 
