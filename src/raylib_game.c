@@ -189,10 +189,9 @@ static float vector2Distance(Vector2, Vector2);
 static Animation loadAnimation(char* fileName, int numFrames, int intervalMs);
 static void drawAnimationFrame(Animation* animation, Vector2 position);
 static void unloadAnimation(Animation* animation);
-static void drawHex(Vector2 center);
+static void drawHex();
 static Hive* initHive(unsigned int x, unsigned int y);
 static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y);
-static void hiveDebugInfo(Hive* hive);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
 static Vector2 mouseToHexPointCoordinates();
@@ -965,7 +964,7 @@ void UpdateDrawFrame(void)
                 if (gs->activeHiveIndex == -1) break;
                 DrawTexture(harvestBg, 0, 0, WHITE);
                 if (CheckCollisionPointRec(GetMousePosition(), HexGridRect)) {
-                    drawHex(GetMousePosition());
+                    drawHex();
                 }
                 DrawRectangleLinesEx(HexGridRect,1, RED);
                 break;
