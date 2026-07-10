@@ -213,7 +213,7 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Best Bee-uddies");
 
     gs = malloc(sizeof(struct GameState));
-    gs->currentScene = HARVEST;
+    gs->currentScene = MENU;
     gs->playerPosition = (Vector2){ 100,100 };
     gs->playerDirection = DOWN;
     gs->playerMoving = false;
