@@ -79,6 +79,14 @@ typedef enum {
     RIGHT = 3,
 } KeeperDirection;
 
+typedef enum {
+    FLOWER_ZINNIAS = 0,
+    FLOWER_DAHLIAS = 1,
+    FLOWER_LAVENDERS = 2,
+    FLOWER_SUNFLOWERS = 3,
+} FlowerType;
+
+
 typedef struct Animation {
     int frame;
     int numFrames;
@@ -99,6 +107,11 @@ typedef struct Hive {
     float** hexes;
 } Hive;
 
+typedef struct Flower {
+    FlowerType type;
+    Vector2 position;
+} Flower;
+
 struct GameState {
     enum CurrentScene currentScene;
     Vector2 playerPosition;
@@ -106,7 +119,9 @@ struct GameState {
     bool playerMoving;
     bool playerNearShop;
     Hive **hives;
+    Flower **flowers;
     int numHives;
+    int numFlowers;
     int money;
     BuildType currentlyBuilding;
 } GameState;
@@ -138,6 +153,7 @@ static Texture2D harvestBg;
 static Texture2D menuBg;
 static Texture2D gardenBg;
 static Texture2D shopBg;
+static Texture2D sunflowerSprite;
 static Animation keeperSprites[7];
 static Animation keyZ;
 static Texture2D coin;
@@ -168,6 +184,7 @@ static void drawAnimationFrame(Animation* animation, Vector2 position);
 static void unloadAnimation(Animation* animation);
 static void drawHex(Vector2 center);
 static Hive* initHive(unsigned int x, unsigned int y);
+static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y);
 static void hiveDebugInfo(Hive* hive);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
@@ -199,6 +216,9 @@ int main(void)
     gs->hives = malloc(sizeof(Hive*) * 16);
     gs->numHives = 0;
     gs->hives[0] = initHive(2, 5);
+
+    gs->flowers = malloc(sizeof(Flower*) * 200);
+    gs->numFlowers = 0;
     
     printf("%s\n", GetWorkingDirectory());
 
@@ -216,6 +236,7 @@ int main(void)
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
         coin = LoadTexture("../../../src/resources/coin.png");
+        sunflowerSprite = LoadTexture("../../../src/resources/sunflowers.png");
         hexOutline = LoadTexture("../../../src/resources/hex_outline.png");
         startButton.texture = LoadTexture("../../../src/resources/start_button.png");
         menuButton.texture = LoadTexture("../../../src/resources/menu_button.png");
@@ -235,6 +256,7 @@ int main(void)
         shopBg = LoadTexture("resources/shop_bg.png");
         keyZ = loadAnimation("resources/key_z.png", 10, 200);
         coin = LoadTexture("resources/coin.png");
+        sunflowerSprite = LoadTexture("resources/sunflowers.png");
         hexOutline = LoadTexture("resources/hex_outline.png");
         startButton.texture = LoadTexture("resources/start_button.png");
         menuButton.texture = LoadTexture("resources/menu_button.png");
@@ -426,47 +448,81 @@ void drawHives(void) {
     }
 }
 
+void drawFlowers(void) {
+    for (unsigned int i = 0; i < gs->numFlowers; i++) {
+        Vector2 flowerPixelPosition = gardenHexPositionToPixelPosition(gs->flowers[i]->position);
+
+        switch (gs->flowers[i]->type) {
+            case FLOWER_ZINNIAS: {
+                break;
+            }
+            case FLOWER_DAHLIAS: {
+                break;
+            }
+            case FLOWER_LAVENDERS: {
+                break;
+            }
+            case FLOWER_SUNFLOWERS: {
+                flowerPixelPosition.x -= 20;
+                flowerPixelPosition.y -= 30;
+
+                DrawTextureV(sunflowerSprite, flowerPixelPosition, WHITE);
+                break;
+            }        
+        }
+    }
+}
+
 void drawShopScene(void) {
     // Draw background
     DrawTexture(shopBg, 0, 0, WHITE);
+    char priceString[10];
 
     // Draw prices
     DrawTexture(coin, 500, 170, WHITE);
-    if (gs->money >= 10000) {
-        DrawText("10000", 520, 170, 20, BLACK);
+    if (gs->money >= HIVE_PRICE) {
+        sprintf(priceString, "%d", HIVE_PRICE);
+        DrawText(priceString, 520, 170, 20, BLACK);
     } else {
-        DrawText("10000", 520, 170, 20, RED);
+        sprintf(priceString, "%d", HIVE_PRICE);
+        DrawText(priceString, 520, 170, 20, RED);
     }
 
     DrawTexture(coin, 500, 289, WHITE);
-    if(gs->money >= 500) {
-        DrawText("500", 520, 289, 20, BLACK);
+    if(gs->money >= ZINNIAS_PRICE) {
+        sprintf(priceString, "%d", ZINNIAS_PRICE);
+        DrawText(priceString, 520, 289, 20, BLACK);
     } else {
-        DrawText("500", 520, 289, 20, RED);
+        sprintf(priceString, "%d", ZINNIAS_PRICE);
+        DrawText(priceString, 520, 289, 20, RED);
     }
 
     DrawTexture(coin, 500, 408, WHITE);
-    if(gs->money >= 1000) {
-        DrawText("1000", 520, 408, 20, BLACK);
+    if(gs->money >= DAHLIAS_PRICE) {
+        sprintf(priceString, "%d", DAHLIAS_PRICE);
+        DrawText(priceString, 520, 408, 20, BLACK);
     } else {
-        DrawText("1000", 520, 408, 20, RED);
+        sprintf(priceString, "%d", DAHLIAS_PRICE);
+        DrawText(priceString, 520, 408, 20, RED);
     }
 
     DrawTexture(coin, 500, 527, WHITE);
-    if(gs->money >= 2000) {
-        DrawText("2000", 520, 527, 20, BLACK);
+    if(gs->money >= LAVENDERS_PRICE) {
+        sprintf(priceString, "%d", LAVENDERS_PRICE);
+        DrawText(priceString, 520, 527, 20, BLACK);
     } else {
-        DrawText("2000", 520, 527, 20, RED);
+        sprintf(priceString, "%d", LAVENDERS_PRICE);
+        DrawText(priceString, 520, 527, 20, RED);
     }
 
     DrawTexture(coin, 500, 646, WHITE);
-    if(gs->money >= 5000) {
-        DrawText("5000", 520, 646, 20, BLACK);
+    if(gs->money >= SUNFLOWERS_PRICE) {
+        sprintf(priceString, "%d", SUNFLOWERS_PRICE);
+        DrawText(priceString, 520, 646, 20, BLACK);
     } else {
-        DrawText("5000", 520, 646, 20, RED);
+        sprintf(priceString, "%d", SUNFLOWERS_PRICE);
+        DrawText(priceString, 520, 646, 20, RED);
     }
-
-
 }
 
 void drawBuildScene(void) {
@@ -488,18 +544,24 @@ void drawBuildScene(void) {
         }        
     }
 
-    // Draw hives
+    // Draw objects
     drawHives();
+    drawFlowers();
+
 
     // Draw build 
+    Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+    Vector2 chosenHexPixelCoord = gardenHexPositionToPixelPosition(chosenHexCoord);
+    drawGardenHexFilled(chosenHexPixelCoord, SKYBLUE); 
+
     switch (gs->currentlyBuilding) {
         case BUILD_HIVE: {
-            Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
-            Vector2 chosenHexPixelCoord = gardenHexPositionToPixelPosition(chosenHexCoord);
-            drawGardenHexFilled(chosenHexPixelCoord, SKYBLUE); 
             drawAnimationFrame(&hiveSprite, (Vector2){chosenHexPixelCoord.x - 32, chosenHexPixelCoord.y - 55});
             break;
         }
+        case BUILD_SUNFLOWERS:
+            DrawTextureV(sunflowerSprite, (Vector2){chosenHexPixelCoord.x - 20, chosenHexPixelCoord.y-30}, WHITE);
+            break;
         default: {
             // TODO
             break;
@@ -516,12 +578,24 @@ void updateBuildScene(void) {
                 Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
 
                 gs->hives[gs->numHives] = initHive(chosenHexCoord.x, chosenHexCoord.y);
-                gs->money -= 1000; // TODO
+                gs->money -= HIVE_PRICE;
                 gs->currentScene = GARDEN;
             }
         
             break;
         }
+        case BUILD_SUNFLOWERS: {
+            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+
+                gs->flowers[gs->numFlowers] = initFlower(FLOWER_SUNFLOWERS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->money -= SUNFLOWERS_PRICE;
+                gs->currentScene = GARDEN;
+            }
+        
+            break;
+        }
+
         default: {
             // TODO
         }    
@@ -536,8 +610,9 @@ void drawGardenScene(void) {
     // Draw background
     DrawTexture(gardenBg, 0, -120, WHITE);
 
-    // Draw hives
+    // Draw objects
     drawHives();
+    drawFlowers();
 
     // Draw player
     switch (gs->playerDirection) {
@@ -615,28 +690,28 @@ void updateShopScene(void) {
                 SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
             } else if (i == 4 && gs->money < SUNFLOWERS_PRICE) {
                 SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
-           }
-        }
-
-        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            if (i == 0 && gs->money >= HIVE_PRICE) {
-                gs->currentScene = BUILD;
-                gs->currentlyBuilding = BUILD_HIVE;
-            } else if (i == 1 && gs->money >= ZINNIAS_PRICE) {
-                gs->currentScene = BUILD;
-                gs->currentlyBuilding = BUILD_ZINNIAS;
-            } else if (i == 2 && gs->money >= DAHLIAS_PRICE) {
-                gs->currentScene = BUILD;
-                gs->currentlyBuilding = BUILD_DAHLIAS;
-            } else if (i == 3 && gs->money >= LAVENDERS_PRICE) {
-                gs->currentScene = BUILD;
-                gs->currentlyBuilding = BUILD_LAVENDERS;
-            } else if (i == 4 && gs->money >= SUNFLOWERS_PRICE) {
-                gs->currentScene = BUILD;
-                gs->currentlyBuilding = BUILD_SUNFLOWERS;
             }
- 
-            break;
+        
+
+            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+                if (i == 0 && gs->money >= HIVE_PRICE) {
+                    gs->currentScene = BUILD;
+                    gs->currentlyBuilding = BUILD_HIVE;
+                } else if (i == 1 && gs->money >= ZINNIAS_PRICE) {
+                    gs->currentScene = BUILD;
+                    gs->currentlyBuilding = BUILD_ZINNIAS;
+                } else if (i == 2 && gs->money >= DAHLIAS_PRICE) {
+                    gs->currentScene = BUILD;
+                    gs->currentlyBuilding = BUILD_DAHLIAS;
+                } else if (i == 3 && gs->money >= LAVENDERS_PRICE) {
+                    gs->currentScene = BUILD;
+                    gs->currentlyBuilding = BUILD_LAVENDERS;
+                } else if (i == 4 && gs->money >= SUNFLOWERS_PRICE) {
+                    gs->currentScene = BUILD;
+                    gs->currentlyBuilding = BUILD_SUNFLOWERS;
+                }
+                break;
+            }
         }
     }
 }
@@ -893,4 +968,12 @@ static Hive* initHive(unsigned int x, unsigned int y) {
 
     gs->numHives++;
     return h;
+}
+
+static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y) {
+    Flower *f = malloc(sizeof(Flower));
+    f->type = type;
+    f->position = (Vector2){x, y};
+    gs->numFlowers++;
+    return f;
 }
