@@ -87,7 +87,6 @@ typedef enum {
     FLOWER_SUNFLOWERS = 3,
 } FlowerType;
 
-
 typedef struct Animation {
     int frame;
     int numFrames;
@@ -113,15 +112,11 @@ typedef struct HarvestHex {
     float timeUntilReadyMS;
 } HarvestHex;
 
-int isHarvestHexUnassigned(HarvestHex *h) {
-    return h->flowerType == FLOWER_NONE;
-}
-
 typedef struct Hive {
     Vector2 position; // position on garden hexgrid
     HarvestHex*** hexes;
+    float nextHexStartFill;
 } Hive;
-
 
 struct GameState {
     enum CurrentScene currentScene;
@@ -145,6 +140,8 @@ struct GameState {
 #define INITIAL_OFFSET_Y 12
 #define MOD_OFFSET_X  4
 #define UNEVEN_ROW_X_OFFSET 23
+#define NEXT_FILL_TIME_IN_SECONDS 4
+#define DEFAULT_TIME_UNTIL_READY 2
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
@@ -176,6 +173,11 @@ static Animation keeperSprites[7];
 static Animation keyZ;
 static Texture2D coin;
 static Texture2D hexOutline;
+static Texture2D hexBlue;
+static Texture2D hexPink;
+static Texture2D hexRed;
+static Texture2D hexYellow;
+static Texture2D honeyGlass;
 static Camera2D gardenCamera;
 static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
@@ -204,13 +206,17 @@ static void drawHex();
 static Hive* initHive(unsigned int x, unsigned int y);
 static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y);
 static HarvestHex* initHarvestHex();
+static void assignHexTile(Hive *h);
 static int isTileNeighbor(Vector2 currentTile, Vector2 newTile);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
 static Vector2 mouseToHexPointCoordinates();
+static FlowerType randomFlower();
 static Vector2 hexDrawingCoordinates(Vector2 pos);
-
+static void drawHarvestScene(void);
 static void drawButton(Button* button);
+static void updateHarvestScene(void);
+
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -233,7 +239,8 @@ int main(void)
     gs->playerNearShop = false;
     gs->money = STARTING_MONEY;
     gs->currentlyBuilding = BUILD_NULL;
-    gs->activeHiveIndex = -1;
+    // Hi! This should be -1, but for testing it's 0!
+    gs->activeHiveIndex = 0;
 
     gs->hives = malloc(sizeof(Hive*) * 16);
     gs->numHives = 0;
@@ -242,8 +249,6 @@ int main(void)
     gs->flowers = malloc(sizeof(Flower*) * 200);
     gs->numFlowers = 0;
     
-    printf("%s\n", GetWorkingDirectory());
-
     // Initialize garden camera
     gardenCamera.target = gs->playerPosition;
     gardenCamera.offset = (Vector2){screenWidth/2.0f, screenHeight/2.0f};
@@ -263,6 +268,11 @@ int main(void)
         lavenderSprite = LoadTexture("../../../src/resources/lavender.png");
         sunflowerSprite = LoadTexture("../../../src/resources/sunflowers.png");
         hexOutline = LoadTexture("../../../src/resources/hex_outline.png");
+        hexBlue = LoadTexture("../../../src/resources/hex_blue.png");
+        hexPink = LoadTexture("../../../src/resources/hex_pink.png");
+        hexRed = LoadTexture("../../../src/resources/hex_red.png");
+        hexYellow = LoadTexture("../../../src/resources/hex_yellow.png");
+        honeyGlass = LoadTexture("../../../src/resources/honey_glass.png");
         startButton.texture = LoadTexture("../../../src/resources/start_button.png");
         menuButton.texture = LoadTexture("../../../src/resources/menu_button.png");
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
@@ -286,6 +296,11 @@ int main(void)
         lavenderSprite = LoadTexture("resources/lavender.png");
         sunflowerSprite = LoadTexture("resources/sunflowers.png");
         hexOutline = LoadTexture("resources/hex_outline.png");
+        hexBlue = LoadTexture("resources/hex_blue.png");
+        hexPink = LoadTexture("resources/hex_pink.png");;
+        hexRed = LoadTexture("resources/hex_red.png");;
+        hexYellow = LoadTexture("resources/hex_yellow.png");;
+        honeyGlass = LoadTexture("resources/honey_glass.png");;
         startButton.texture = LoadTexture("resources/start_button.png");
         menuButton.texture = LoadTexture("resources/menu_button.png");
         aboutButton.texture = LoadTexture("resources/about_button.png");
@@ -356,7 +371,7 @@ static void drawHex() {
 
 static Vector2 hexDrawingCoordinates(Vector2 pos) {
     int evenColumn = ((int)pos.y) % 2 == 0; 
-    int xOffset = (evenColumn ? 5 : UNEVEN_ROW_X_OFFSET) + (SMALL_DELTA_BETWEEN_HEXES * pos.x);
+    int xOffset = (evenColumn ? 4 : UNEVEN_ROW_X_OFFSET) + (SMALL_DELTA_BETWEEN_HEXES * pos.x);
     int x = hexOutline.width * pos.x + HexGridRect.x + (xOffset);
     int y = (hexOutline.height - 9) * pos.y + HexGridRect.y + (SMALL_DELTA_BETWEEN_HEXES * pos.y);
     return (Vector2){.x = x, .y = y};
@@ -932,6 +947,19 @@ void UpdateDrawFrame(void)
         nextSceneChange -= GetFrameTime();
     }
 
+    if (gs->currentScene != ABOUT && gs->currentScene != MENU) {
+        float delta = GetFrameTime();
+        for (int i = 0; i < gs->numHives; i++) {
+            Hive *h = gs->hives[i];
+            if (h->nextHexStartFill > 0) {
+                h->nextHexStartFill -= delta;
+            } else {
+                assignHexTile(h);
+                h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
+            }
+        }
+    }
+
 
     switch (gs->currentScene) {
         case GARDEN:
@@ -949,6 +977,8 @@ void UpdateDrawFrame(void)
         case ABOUT:
             updateMenu();
             break;
+        case HARVEST: 
+            updateHarvestScene();
         default:
             // TODO
             break;
@@ -983,13 +1013,7 @@ void UpdateDrawFrame(void)
                 break;
             }
             case HARVEST: {
-                gs->activeHiveIndex = 0;
-                if (gs->activeHiveIndex == -1) break;
-                DrawTexture(harvestBg, 0, 0, WHITE);
-                if (CheckCollisionPointRec(GetMousePosition(), HexGridRect)) {
-                    drawHex();
-                }
-                DrawRectangleLinesEx(HexGridRect,1, RED);
+                drawHarvestScene();
                 break;
             }
             case ABOUT: {
@@ -1048,7 +1072,7 @@ static Hive* initHive(unsigned int x, unsigned int y) {
     }
 
     h->position = (Vector2){x, y};
-
+    h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
     gs->numHives++;
     return h;
 }
@@ -1069,5 +1093,71 @@ static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y) {
 }
 
 static int isTileNeighbor(Vector2 currentTile, Vector2 newTile) {
-    return 0;     
+    return 0;
+}
+
+FlowerType randomFlower() {
+    return GetRandomValue(0, 3);
+}
+
+static void assignHexTile(Hive *h) {
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            int c = GetRandomValue(0, COLUMN_COUNT - 1);
+            int r = GetRandomValue(0, c % 2 == 0 ? ROW_COUNT_EVEN - 1 : ROW_COUNT_UNEVEN - 1);
+            if (h->hexes[c][r]->flowerType != FLOWER_NONE) continue;
+            h->hexes[c][r]->flowerType = randomFlower();
+            h->hexes[c][r]->timeUntilReadyMS = DEFAULT_TIME_UNTIL_READY;
+            return;   
+        }
+    }
+    // TODO(Jonas): Check everything filled
+}
+
+static void drawHarvestScene(void) {
+    if (gs->activeHiveIndex == -1) {
+        printf("No activeHiveIndex set. Bailing from function.\n");
+        return;
+    }
+    DrawTexture(harvestBg, 0, 0, WHITE);
+    
+    Hive *h = gs->hives[gs->activeHiveIndex];
+    for (int c = 0; c < COLUMN_COUNT; c++) {
+        int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
+        for (int r = 0; r < rowCount; r++) {
+            HarvestHex *hh = h->hexes[c][r];
+            if (hh->flowerType != FLOWER_NONE) {
+                Vector2 pos = hexDrawingCoordinates((Vector2){.x = r, .y = c});
+                Color color = WHITE;
+                if (hh->timeUntilReadyMS > 0) {
+                    color.a = 255 - (hh->timeUntilReadyMS / DEFAULT_TIME_UNTIL_READY) * 255;
+                }
+                DrawTexture(hexRed, pos.x, pos.y, color);
+            }
+        } 
+    }
+
+    if (CheckCollisionPointRec(GetMousePosition(), HexGridRect)) {
+        drawHex();
+    }
+}
+
+static void updateHarvestScene() {
+    if (gs->activeHiveIndex == -1) {
+        printf("No activeHiveIndex set. Bailing from function.\n");
+        return;
+    }
+    Hive *h = gs->hives[gs->activeHiveIndex];
+    float delta = GetFrameTime();
+    for (int c = 0; c < COLUMN_COUNT; c++) {
+        int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
+        for (int r = 0; r < rowCount; r++) {
+            HarvestHex *hh = h->hexes[c][r];
+            if (hh->flowerType != FLOWER_NONE) {
+                if (hh->timeUntilReadyMS > 0) {
+                    hh->timeUntilReadyMS -= delta;
+                }
+            }
+        } 
+    }
 }
