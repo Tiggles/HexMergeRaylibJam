@@ -1093,7 +1093,8 @@ static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y) {
 }
 
 static int isTileNeighbor(Vector2 currentTile, Vector2 newTile) {
-    return 0;
+    // TODO(Jonas)
+    return false;
 }
 
 FlowerType randomFlower() {
@@ -1160,6 +1161,9 @@ static void drawHarvestScene(void) {
     if (CheckCollisionPointRec(GetMousePosition(), HexGridRect)) {
         drawHex();
     }
+
+    // Vector2 f = hexDrawingCoordinates((Vector2){.x = 5, .y = 5});
+    // DrawTexture(hexRed, f.x, f.y, WHITE);
 }
 
 static void updateHarvestScene() {
@@ -1179,5 +1183,11 @@ static void updateHarvestScene() {
                 }
             }
         } 
+    }
+
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        Vector2 point = mouseToHexPointCoordinates();
+        
+        //printf("%i\n", isTileNeighbor(point, (Vector2){.x = 5, .y = 5 }));
     }
 }
