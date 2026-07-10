@@ -1132,7 +1132,27 @@ static void drawHarvestScene(void) {
                 if (hh->timeUntilReadyMS > 0) {
                     color.a = 255 - (hh->timeUntilReadyMS / DEFAULT_TIME_UNTIL_READY) * 255;
                 }
-                DrawTexture(hexRed, pos.x, pos.y, color);
+                Texture2D *t = &hexRed;
+                switch (hh->flowerType) {
+                    case FLOWER_NONE:
+                    case FLOWER_ZINNIAS: {
+                        t = &hexRed;
+                        break;
+                    }
+                    case FLOWER_DAHLIAS: {
+                        t = &hexBlue;
+                        break;
+                    }
+                    case FLOWER_LAVENDERS: {
+                        t = &hexPink;
+                        break;
+                    }
+                    case FLOWER_SUNFLOWERS: {
+                        t = &hexYellow;
+                        break;
+                    }
+                }
+                DrawTexture(*t, pos.x, pos.y, color);
             }
         } 
     }
