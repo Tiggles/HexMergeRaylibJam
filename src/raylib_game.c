@@ -80,6 +80,7 @@ typedef enum {
 } KeeperDirection;
 
 typedef enum {
+    FLOWER_NONE = -1,
     FLOWER_ZINNIAS = 0,
     FLOWER_DAHLIAS = 1,
     FLOWER_LAVENDERS = 2,
@@ -102,15 +103,25 @@ typedef struct Button {
     Vector2 position;
 } Button;
 
-typedef struct Hive {
-    Vector2 position; // position on garden hexgrid
-    float** hexes;
-} Hive;
-
 typedef struct Flower {
     FlowerType type;
     Vector2 position;
 } Flower;
+
+typedef struct HarvestHex {
+    FlowerType flowerType;
+    float timeUntilReadyMS;
+} HarvestHex;
+
+int isHarvestHexUnassigned(HarvestHex *h) {
+    return h->flowerType == FLOWER_NONE;
+}
+
+typedef struct Hive {
+    Vector2 position; // position on garden hexgrid
+    HarvestHex*** hexes;
+} Hive;
+
 
 struct GameState {
     enum CurrentScene currentScene;
@@ -192,6 +203,8 @@ static void unloadAnimation(Animation* animation);
 static void drawHex();
 static Hive* initHive(unsigned int x, unsigned int y);
 static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y);
+static HarvestHex* initHarvestHex();
+static int isTileNeighbor(Vector2 currentTile, Vector2 newTile);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
 static Vector2 mouseToHexPointCoordinates();
@@ -504,7 +517,11 @@ void drawFlowers(void) {
 
                 DrawTextureV(sunflowerSprite, flowerPixelPosition, WHITE);
                 break;
-            }        
+            }
+            case FLOWER_NONE: {
+                // Relevant elsewhere
+                break;
+            }
         }
     }
 }
@@ -1026,7 +1043,7 @@ static Hive* initHive(unsigned int x, unsigned int y) {
     for (int c = 0; c < COLUMN_COUNT; c++) {
         h->hexes[c] = malloc(sizeof(size_t) * ROW_COUNT_EVEN);
         for (int r = 0; r < ROW_COUNT_EVEN; r++) {
-            h->hexes[c][r] = 0;
+            h->hexes[c][r] = initHarvestHex();
         }
     }
 
@@ -1036,10 +1053,21 @@ static Hive* initHive(unsigned int x, unsigned int y) {
     return h;
 }
 
+static HarvestHex *initHarvestHex() {
+    HarvestHex *h = malloc(sizeof(HarvestHex));
+    h->flowerType = FLOWER_NONE;
+    h->timeUntilReadyMS = -1;
+    return h;
+}
+
 static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y) {
     Flower *f = malloc(sizeof(Flower));
     f->type = type;
     f->position = (Vector2){x, y};
     gs->numFlowers++;
     return f;
+}
+
+static int isTileNeighbor(Vector2 currentTile, Vector2 newTile) {
+    return 0;     
 }
