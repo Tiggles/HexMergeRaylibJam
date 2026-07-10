@@ -107,12 +107,18 @@ struct GameState {
     bool playerNearShop;
     Hive **hives;
     int numHives;
+    int activeHiveIndex;
     int money;
     BuildType currentlyBuilding;
 } GameState;
 
-#define MAX_COLUMNS 14
-#define MAX_ROWS 14
+#define COLUMN_COUNT 14
+#define ROW_COUNT_EVEN 15
+#define ROW_COUNT_UNEVEN 14
+#define INITIAL_OFFSET_X 12
+#define INITIAL_OFFSET_Y 12
+#define MOD_OFFSET_X  4
+#define UNEVEN_ROW_X_OFFSET 23
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
@@ -120,8 +126,6 @@ struct GameState {
 static const int screenWidth = 720;
 static const int screenHeight = 720;
 static const Vector2 SHOP_POSITION = {660, -20};
-//static const int HONEYCOMBS_COLUMNS = 16;
-//static const int HONEYCOMBS_ROWS = 14;
 static const int MOVEMENT_SPEED = 200;
 static const Color GRASSGREEN = {51, 152, 75, 1};
 static const int GARDEN_HEX_SIZE = 30;
@@ -168,9 +172,9 @@ static void drawAnimationFrame(Animation* animation, Vector2 position);
 static void unloadAnimation(Animation* animation);
 static void drawHex(Vector2 center);
 static Hive* initHive(unsigned int x, unsigned int y);
-static void hiveDebugInfo(Hive* hive);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
+static Vector2 mouseToHexPointCoordinates();
 
 static void drawButton(Button* button);
 
@@ -188,13 +192,14 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Best Bee-uddies");
 
     gs = malloc(sizeof(struct GameState));
-    gs->currentScene = MENU;
+    gs->currentScene = HARVEST;
     gs->playerPosition = (Vector2){ 100,100 };
     gs->playerDirection = DOWN;
     gs->playerMoving = false;
     gs->playerNearShop = false;
     gs->money = STARTING_MONEY;
     gs->currentlyBuilding = BUILD_NULL;
+    gs->activeHiveIndex = -1;
 
     gs->hives = malloc(sizeof(Hive*) * 16);
     gs->numHives = 0;
@@ -269,8 +274,7 @@ int main(void)
     //--------------------------------------------------------------------------------------
 
     // Main game loop
-    while (!WindowShouldClose())    // Detect window close button
-    {
+    while (!WindowShouldClose()) {   // Detect window close button
         UpdateDrawFrame();
     }
 #endif
@@ -297,10 +301,15 @@ static float vector2Distance(Vector2 a, Vector2 b) {
     return sqrtf(powf((a.x - b.x), 2) + powf((a.y - b.y), 2));
 }
 
-static void drawHex(Vector2 center) {
-    int hexMidHeight = hexOutline.height / 2;
-    int hexMidWidth = hexOutline.width / 2;
-    DrawTexture(hexOutline, center.x - hexMidWidth, center.y - hexMidHeight, WHITE);
+#define SMALL_DELTA_BETWEEN_HEXES 3
+static void drawHex() {
+    Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
+    if (point.x == -1 || point.y == -1) return;
+    int evenColumn = ((int)point.y) % 2 == 0; 
+    int xOffset = (evenColumn ? 5 : UNEVEN_ROW_X_OFFSET) + (SMALL_DELTA_BETWEEN_HEXES * point.x);
+    int x = hexOutline.width * point.x + HexGridRect.x + (xOffset);
+    int y = (hexOutline.height - 9) * point.y + HexGridRect.y + (SMALL_DELTA_BETWEEN_HEXES * point.y);
+    DrawTexture(hexOutline, x, y, WHITE);
 }
 
 static void drawGardenHex(Vector2 center) {
@@ -834,9 +843,12 @@ void UpdateDrawFrame(void)
                 break;
             }
             case HARVEST: {
+                gs->activeHiveIndex = 0;
+                if (gs->activeHiveIndex == -1) break;
                 DrawTexture(harvestBg, 0, 0, WHITE);
-                drawHex(GetMousePosition());
-                hiveDebugInfo(gs->hives[0]);
+                if (CheckCollisionPointRec(GetMousePosition(), HexGridRect)) {
+                    drawHex(GetMousePosition());
+                }
                 DrawRectangleLinesEx(HexGridRect,1, RED);
                 break;
             }
@@ -865,26 +877,32 @@ void UpdateDrawFrame(void)
     //----------------------------------------------------------------------------------  
 }
 
-#define INITIAL_OFFSET_X 12
-#define INITIAL_OFFSET_Y 12
-#define MOD_OFFSET_X  4
-
-static void hiveDebugInfo(Hive* hive) {
-    for (int c = 0; c < MAX_COLUMNS; c++) {
-        for (int r = 0; r < MAX_ROWS; r++) {
-            int posX = INITIAL_OFFSET_X + 90 * c + c % 2 == 0 ? 0 : MOD_OFFSET_X;
-            int posY = INITIAL_OFFSET_Y + 22 * r;
-            DrawText(TextFormat("%f", hive->hexes[c][r]), posX, posY, 4, WHITE);
+Vector2 mouseToHexPointCoordinates() {
+    Vector2 mouse = GetMousePosition();
+    int heightOfHex = HexGridRect.height / COLUMN_COUNT;
+    int column = (mouse.y - HexGridRect.y) / heightOfHex;
+    int isEven = column % 2 == 0;
+    if (!isEven) {
+        if (mouse.x < HexGridRect.x + 24 || mouse.x > HexGridRect.x + HexGridRect.width - 24) {
+            return (Vector2){.x = -1, .y = -1};
         }
+        mouse.x -= UNEVEN_ROW_X_OFFSET;
     }
+    
+    int widthOfHex = HexGridRect.width / (ROW_COUNT_EVEN);
+    int row = (mouse.x - HexGridRect.x) / widthOfHex; 
+    return (Vector2) {
+        .x = row >= 14 ? 14 : row,
+        .y = column > COLUMN_COUNT ? COLUMN_COUNT - 1 : column,
+    };
 }
 
 static Hive* initHive(unsigned int x, unsigned int y) {
     Hive *h = malloc(sizeof(Hive));
-    h->hexes = malloc(sizeof(size_t) * MAX_COLUMNS);
-    for (int c = 0; c < MAX_COLUMNS; c++) {
-        h->hexes[c] = malloc(sizeof(size_t) * MAX_ROWS);
-        for (int r = 0; r < MAX_ROWS; r++) {
+    h->hexes = malloc(sizeof(size_t) * COLUMN_COUNT);
+    for (int c = 0; c < COLUMN_COUNT; c++) {
+        h->hexes[c] = malloc(sizeof(size_t) * ROW_COUNT_EVEN);
+        for (int r = 0; r < ROW_COUNT_EVEN; r++) {
             h->hexes[c][r] = 0;
         }
     }
