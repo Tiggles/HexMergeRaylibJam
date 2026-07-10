@@ -153,6 +153,9 @@ static Texture2D harvestBg;
 static Texture2D menuBg;
 static Texture2D gardenBg;
 static Texture2D shopBg;
+static Texture2D zinniasSprite;
+static Texture2D dahliasSprite;
+static Texture2D lavenderSprite;
 static Texture2D sunflowerSprite;
 static Animation keeperSprites[7];
 static Animation keyZ;
@@ -236,6 +239,9 @@ int main(void)
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
         coin = LoadTexture("../../../src/resources/coin.png");
+        zinniasSprite = LoadTexture("../../../src/resources/zinnias.png");
+        dahliasSprite = LoadTexture("../../../src/resources/dahlias.png");
+        lavenderSprite = LoadTexture("../../../src/resources/lavender.png");
         sunflowerSprite = LoadTexture("../../../src/resources/sunflowers.png");
         hexOutline = LoadTexture("../../../src/resources/hex_outline.png");
         startButton.texture = LoadTexture("../../../src/resources/start_button.png");
@@ -256,6 +262,9 @@ int main(void)
         shopBg = LoadTexture("resources/shop_bg.png");
         keyZ = loadAnimation("resources/key_z.png", 10, 200);
         coin = LoadTexture("resources/coin.png");
+        zinniasSprite = LoadTexture("resources/zinnias.png");
+        dahliasSprite = LoadTexture("resources/dahlias.png");
+        lavenderSprite = LoadTexture("resources/lavender.png");
         sunflowerSprite = LoadTexture("resources/sunflowers.png");
         hexOutline = LoadTexture("resources/hex_outline.png");
         startButton.texture = LoadTexture("resources/start_button.png");
@@ -454,12 +463,24 @@ void drawFlowers(void) {
 
         switch (gs->flowers[i]->type) {
             case FLOWER_ZINNIAS: {
+                flowerPixelPosition.x -= 20;
+                flowerPixelPosition.y -= 30;
+
+                DrawTextureV(zinniasSprite, flowerPixelPosition, WHITE);
                 break;
             }
             case FLOWER_DAHLIAS: {
+                flowerPixelPosition.x -= 20;
+                flowerPixelPosition.y -= 30;
+
+                DrawTextureV(dahliasSprite, flowerPixelPosition, WHITE);
                 break;
             }
             case FLOWER_LAVENDERS: {
+                flowerPixelPosition.x -= 20;
+                flowerPixelPosition.y -= 30;
+
+                DrawTextureV(lavenderSprite, flowerPixelPosition, WHITE);
                 break;
             }
             case FLOWER_SUNFLOWERS: {
@@ -555,10 +576,18 @@ void drawBuildScene(void) {
     drawGardenHexFilled(chosenHexPixelCoord, SKYBLUE); 
 
     switch (gs->currentlyBuilding) {
-        case BUILD_HIVE: {
+        case BUILD_HIVE:
             drawAnimationFrame(&hiveSprite, (Vector2){chosenHexPixelCoord.x - 32, chosenHexPixelCoord.y - 55});
             break;
-        }
+        case BUILD_ZINNIAS:
+            DrawTextureV(zinniasSprite, (Vector2){chosenHexPixelCoord.x - 20, chosenHexPixelCoord.y-30}, WHITE);
+            break;
+        case BUILD_DAHLIAS:
+            DrawTextureV(dahliasSprite, (Vector2){chosenHexPixelCoord.x - 20, chosenHexPixelCoord.y-30}, WHITE);
+            break;
+        case BUILD_LAVENDERS:
+            DrawTextureV(lavenderSprite, (Vector2){chosenHexPixelCoord.x - 20, chosenHexPixelCoord.y-30}, WHITE);
+            break;
         case BUILD_SUNFLOWERS:
             DrawTextureV(sunflowerSprite, (Vector2){chosenHexPixelCoord.x - 20, chosenHexPixelCoord.y-30}, WHITE);
             break;
@@ -572,33 +601,46 @@ void drawBuildScene(void) {
 void updateBuildScene(void) {
     Vector2 cursor = GetMousePosition(); 
 
-    switch (gs->currentlyBuilding) {
-        case BUILD_HIVE: {
-            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
-
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+        switch (gs->currentlyBuilding) {
+            case BUILD_HIVE: {
                 gs->hives[gs->numHives] = initHive(chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= HIVE_PRICE;
                 gs->currentScene = GARDEN;
-            }
         
-            break;
-        }
-        case BUILD_SUNFLOWERS: {
-            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
-
+                break;
+            }
+            case BUILD_ZINNIAS: {
+                gs->flowers[gs->numFlowers] = initFlower(FLOWER_ZINNIAS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->money -= ZINNIAS_PRICE;
+                gs->currentScene = GARDEN;
+        
+                break;
+            }
+            case BUILD_DAHLIAS: {
+                gs->flowers[gs->numFlowers] = initFlower(FLOWER_DAHLIAS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->money -= DAHLIAS_PRICE;
+                gs->currentScene = GARDEN;
+        
+                break;
+            }
+            case BUILD_LAVENDERS: {
+                gs->flowers[gs->numFlowers] = initFlower(FLOWER_LAVENDERS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->money -= LAVENDERS_PRICE;
+                gs->currentScene = GARDEN;
+        
+                break;
+            }
+            case BUILD_SUNFLOWERS: {
                 gs->flowers[gs->numFlowers] = initFlower(FLOWER_SUNFLOWERS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= SUNFLOWERS_PRICE;
                 gs->currentScene = GARDEN;
-            }
         
-            break;
+                break;
+            }
+            default: {}    
         }
-
-        default: {
-            // TODO
-        }    
     }
 }
 
