@@ -99,6 +99,7 @@ typedef struct Animation {
 typedef struct Button {
     Texture2D texture;
     bool isHovered;
+    bool isClicked;
     Vector2 position;
 } Button;
 
@@ -189,6 +190,7 @@ static Button startButton;
 static Button menuButton;
 static Button aboutButton;
 static Button backToMenuButton;
+static Button backToGardenButton;
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -282,6 +284,7 @@ int main(void)
         menuButton.texture = LoadTexture("../../../src/resources/menu_button.png");
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
         backToMenuButton.texture = LoadTexture("../../../src/resources/back_to_menu_button.png");
+        backToGarden.texture = LoadTexture("../../../src/resources/back_to_garden.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -312,6 +315,7 @@ int main(void)
         menuButton.texture = LoadTexture("resources/menu_button.png");
         aboutButton.texture = LoadTexture("resources/about_button.png");
         backToMenuButton.texture = LoadTexture("resources/back_to_menu_button.png");
+        backToGardenButton.texture = LoadTexture("resources/back_to_garden_button.png");
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -328,6 +332,7 @@ int main(void)
     menuButton.position = (Vector2){20, 600};
     aboutButton.position = (Vector2){122, 600};
     backToMenuButton.position = (Vector2){549, 26};
+    backToGardenButton.position = (Vector2){570, 640};
 
     // TODO: Load resources / Initialize variables at this point
 
@@ -913,6 +918,21 @@ void drawHud(void) {
     DrawText(moneyString, 690-stringSize, 689, 20, WHITE);
 }
 
+static void updateButton(Button* button) {
+    Vector2 cursor = GetMousePosition();
+    button->isHovered = false; 
+    button->isClicked = false; 
+    Rectangle buttonRec = {button->position.x, button->position.y, button->texture.width/2.0f, button->texture.height};
+
+    if (CheckCollisionPointRec(cursor, buttonRec)) {
+        button->isHovered = true; 
+
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            button->isClicked = true;
+        }
+    }
+}
+
 static void drawButton(Button* button) {
     int buttonWidth = button->texture.width / 2;
     Rectangle buttonRec = {0, 0, buttonWidth, button->texture.height};
@@ -965,16 +985,10 @@ void drawAbout(void) {
 }
 
 void updateAbout(void) {
-    Vector2 cursor = GetMousePosition();
-    backToMenuButton.isHovered = false;
-    Rectangle backToMenuButtonRec = {backToMenuButton.position.x, backToMenuButton.position.y, 139, 36};
+    updateButton(&backToMenuButton);
 
-    if (CheckCollisionPointRec(cursor, backToMenuButtonRec)) {
-        backToMenuButton.isHovered = true; 
-
-        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            gs->currentScene = MENU;
-        }
+    if (backToMenuButton.isClicked) {
+        gs->currentScene = MENU;
     }
 }
 
@@ -1171,6 +1185,7 @@ static void drawHarvestScene(void) {
         return;
     }
     DrawTexture(harvestBg, 0, 0, WHITE);
+    drawButton(&backToGardenButton);
     
     Hive *h = gs->hives[gs->activeHiveIndex];
     for (int c = 0; c < COLUMN_COUNT; c++) {
@@ -1217,6 +1232,12 @@ static void drawHarvestScene(void) {
 }
 
 static void updateHarvestScene() {
+    updateButton(&backToGardenButton);
+
+    if (backToGardenButton.isClicked) {
+        gs->currentScene = GARDEN;
+    }
+
     if (gs->activeHiveIndex == -1) {
         printf("No activeHiveIndex set. Bailing from function.\n");
         return;
