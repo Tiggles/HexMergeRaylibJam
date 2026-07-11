@@ -165,6 +165,7 @@ static Texture2D harvestBg;
 static Texture2D menuBg;
 static Texture2D gardenBg;
 static Texture2D shopBg;
+static Texture2D aboutBg;
 static Texture2D zinniasSprite;
 static Texture2D dahliasSprite;
 static Texture2D lavenderSprite;
@@ -186,6 +187,7 @@ static Rectangle HexGridRect = {
 static Button startButton;
 static Button menuButton;
 static Button aboutButton;
+static Button backToMenuButton;
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -261,6 +263,7 @@ int main(void)
         menuBg = LoadTexture("../../../src/resources/start_button.png");
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
+        aboutBg = LoadTexture("../../../src/resources/about_bg.png");
         keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
         coin = LoadTexture("../../../src/resources/coin.png");
         zinniasSprite = LoadTexture("../../../src/resources/zinnias.png");
@@ -276,6 +279,7 @@ int main(void)
         startButton.texture = LoadTexture("../../../src/resources/start_button.png");
         menuButton.texture = LoadTexture("../../../src/resources/menu_button.png");
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
+        backToMenuButton.texture = LoadTexture("../../../src/resources/back_to_menu_button.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -289,6 +293,7 @@ int main(void)
         menuBg = LoadTexture("resources/menu_bg.png");
         gardenBg = LoadTexture("resources/garden_bg.png");
         shopBg = LoadTexture("resources/shop_bg.png");
+        aboutBg = LoadTexture("resources/about_bg.png");
         keyZ = loadAnimation("resources/key_z.png", 10, 200);
         coin = LoadTexture("resources/coin.png");
         zinniasSprite = LoadTexture("resources/zinnias.png");
@@ -304,6 +309,7 @@ int main(void)
         startButton.texture = LoadTexture("resources/start_button.png");
         menuButton.texture = LoadTexture("resources/menu_button.png");
         aboutButton.texture = LoadTexture("resources/about_button.png");
+        backToMenuButton.texture = LoadTexture("resources/back_to_menu_button.png");
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -319,6 +325,7 @@ int main(void)
     startButton.position = (Vector2){20, 600};
     menuButton.position = (Vector2){20, 600};
     aboutButton.position = (Vector2){122, 600};
+    backToMenuButton.position = (Vector2){549, 26};
 
     // TODO: Load resources / Initialize variables at this point
 
@@ -872,11 +879,13 @@ void updateGardenScene(void) {
         if (gs->playerNearShop) {
            gs->currentScene = SHOP; 
         }
+
+        
     }
 }
 
 void drawHud(void) {
-    if (gs->currentScene == MENU) {
+    if (gs->currentScene == MENU || gs->currentScene == ABOUT) {
         return;
     }
 
@@ -929,7 +938,28 @@ void updateMenu(void) {
             gs->currentScene = ABOUT;
         }
     }
+}
 
+void drawAbout(void) {
+    // Draw background 
+    DrawTexture(aboutBg, 0, 0, WHITE);
+
+    // Draw buttons
+    drawButton(&backToMenuButton);
+}
+
+void updateAbout(void) {
+    Vector2 cursor = GetMousePosition();
+    backToMenuButton.isHovered = false;
+    Rectangle backToMenuButtonRec = {backToMenuButton.position.x, backToMenuButton.position.y, 139, 36};
+
+    if (CheckCollisionPointRec(cursor, backToMenuButtonRec)) {
+        backToMenuButton.isHovered = true; 
+
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            gs->currentScene = MENU;
+        }
+    }
 }
 
 
@@ -978,7 +1008,7 @@ void UpdateDrawFrame(void)
             updateMenu();
             break;
         case ABOUT:
-            updateMenu();
+            updateAbout();
             break;
         case HARVEST: 
             updateHarvestScene();
@@ -1020,6 +1050,7 @@ void UpdateDrawFrame(void)
                 break;
             }
             case ABOUT: {
+                drawAbout();
                 break;
             }
         }
