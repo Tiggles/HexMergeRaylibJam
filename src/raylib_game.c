@@ -1142,8 +1142,21 @@ static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y) {
     return f;
 }
 
-static int isTileNeighbor(Vector2 currentTile, Vector2 newTile) {
-    // TODO(Jonas)
+static int isTileNeighbor(Vector2 t1, Vector2 t2) {
+
+    if (t1.y == t2.y) {
+        return t1.x - 1 == t2.x || t1.x + 1 == t2.x;
+    }
+
+    int isEven = (int)(t1.y) % 2 == 0;
+    if (isEven) {
+        if (abs(t1.y - t2.y) > 1) return false;
+        return t1.x - 1 == t2.x || t1.x == t2.x;
+    } else {
+        if (abs(t1.y - t2.y) > 1) return false;
+        return t1.x == t2.x || t1.x + 1 == t2.x;
+    }
+
     return false;
 }
 
@@ -1211,9 +1224,6 @@ static void drawHarvestScene(void) {
     if (CheckCollisionPointRec(GetMousePosition(), HexGridRect)) {
         drawHex();
     }
-
-    // Vector2 f = hexDrawingCoordinates((Vector2){.x = 5, .y = 5});
-    // DrawTexture(hexRed, f.x, f.y, WHITE);
 }
 
 static void updateHarvestScene() {
@@ -1238,6 +1248,5 @@ static void updateHarvestScene() {
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         Vector2 point = mouseToHexPointCoordinates();
         
-        //printf("%i\n", isTileNeighbor(point, (Vector2){.x = 5, .y = 5 }));
     }
 }
