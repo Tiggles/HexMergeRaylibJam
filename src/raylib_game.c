@@ -647,10 +647,9 @@ void drawBuildScene(void) {
         case BUILD_SUNFLOWERS:
             DrawTextureV(sunflowerSprite, (Vector2){chosenHexPixelCoord.x - 20, chosenHexPixelCoord.y-30}, WHITE);
             break;
-        default: {
-            // TODO
+        case BUILD_NULL:
+            // Ignore
             break;
-        }
     }
 }
 
