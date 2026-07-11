@@ -158,7 +158,7 @@ static const int ZINNIAS_PRICE = 500;
 static const int DAHLIAS_PRICE = 1000;
 static const int LAVENDERS_PRICE = 2000;
 static const int SUNFLOWERS_PRICE = 5000;
-static const int STARTING_MONEY = 5000;
+static const int STARTING_MONEY = 1000;
 
 static float nextSceneChange = 0.0;
 static Animation hiveSprite;
@@ -734,20 +734,12 @@ void drawGardenScene(void) {
     Vector2 playerSpritePosition = {gs->playerPosition.x-24, gs->playerPosition.y-28};
     drawAnimationFrame(&keeperSprites[keeperSprite], playerSpritePosition);
 
-    // Find nearest hive  
-    float distanceToNearest = 9999;
-    for (unsigned int i = 0; i < gs->numHives; i++) {
-        Vector2 hivePixelPos = gardenHexPositionToPixelPosition(gs->hives[i]->position);
-        float distance = vector2Distance(gs->playerPosition, hivePixelPos);
-        if (distance < distanceToNearest) {
-            distanceToNearest = distance;
-            gs->nearestHive = i; 
-        }
-    }
 
-    // If close, show key-z button.
-    if (distanceToNearest < 100) {
-        Vector2 keyZPos = gardenHexPositionToPixelPosition(gs->hives[gs->nearestHive]->position);
+    // If nearest hive is close, show key-z button.
+    Vector2 nearestHivePixelPos = gardenHexPositionToPixelPosition(gs->hives[gs->nearestHive]->position);
+    float distanceToNearestHive = vector2Distance(gs->playerPosition, nearestHivePixelPos);
+    if (distanceToNearestHive < 100) {
+        Vector2 keyZPos = nearestHivePixelPos;
         keyZPos.x -= 8;
         keyZPos.y -= 42;
         drawAnimationFrame(&keyZ, keyZPos);
@@ -888,7 +880,24 @@ void updateGardenScene(void) {
            gs->currentScene = SHOP; 
         }
 
-        
+        // If close to hive, enter harvest mode
+        Vector2 nearestHivePixelPos = gardenHexPositionToPixelPosition(gs->hives[gs->nearestHive]->position);
+        float distanceToNearestHive = vector2Distance(gs->playerPosition, nearestHivePixelPos);
+        if (distanceToNearestHive < 100) {
+            gs->activeHiveIndex = gs->nearestHive;
+            gs->currentScene = HARVEST; 
+        }
+    }
+
+    // Find nearest hive  
+    float distanceToNearest = 9999;
+    for (unsigned int i = 0; i < gs->numHives; i++) {
+        Vector2 hivePixelPos = gardenHexPositionToPixelPosition(gs->hives[i]->position);
+        float distance = vector2Distance(gs->playerPosition, hivePixelPos);
+        if (distance < distanceToNearest) {
+            distanceToNearest = distance;
+            gs->nearestHive = i; 
+        }
     }
 }
 
