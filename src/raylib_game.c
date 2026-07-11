@@ -686,7 +686,10 @@ void updateBuildScene(void) {
         
                 break;
             }
-            default: {}    
+            default: {
+                // If item is not covered, return to garden.
+                gs->currentScene = GARDEN;
+            }    
         }
     }
 }
