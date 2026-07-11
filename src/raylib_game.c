@@ -1026,6 +1026,7 @@ void UpdateDrawFrame(void)
         nextSceneChange -= GetFrameTime();
     }
 
+    // Handle next placement of hex-content
     if (gs->currentScene != ABOUT && gs->currentScene != MENU) {
         float delta = GetFrameTime();
         for (int i = 0; i < gs->numHives; i++) {
@@ -1050,6 +1051,9 @@ void UpdateDrawFrame(void)
             }
         }
     }
+    
+    // Could also be done on leaving HARVEST scene.
+    if (gs->currentScene != HARVEST) clearHarvestChain();
 
     switch (gs->currentScene) {
         case GARDEN:
@@ -1408,6 +1412,9 @@ static void drawJar() {
 // TODOS!
 // - [X] Harvesting chain
 // - [X] Fill jars (?) and sell
+// - [ ] Leave HARVEST scene
 // - [ ] Flowers must affect hexes
 // - [ ] Music
 // - [ ] Sounds
+// - [ ] Fancy animation when honeyGlass is filled
+// - [ ] Lower row of harvesting grid has funky behaviour
