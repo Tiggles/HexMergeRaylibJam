@@ -128,6 +128,7 @@ struct GameState {
     Flower **flowers;
     int numHives;
     int activeHiveIndex;
+    int nearestHive;
     int numFlowers;
     int money;
     BuildType currentlyBuilding;
@@ -243,6 +244,7 @@ int main(void)
     gs->currentlyBuilding = BUILD_NULL;
     // Hi! This should be -1, but for testing it's 0!
     gs->activeHiveIndex = 0;
+    gs->nearestHive = 0;
 
     gs->hives = malloc(sizeof(Hive*) * 16);
     gs->numHives = 0;
@@ -732,17 +734,23 @@ void drawGardenScene(void) {
     Vector2 playerSpritePosition = {gs->playerPosition.x-24, gs->playerPosition.y-28};
     drawAnimationFrame(&keeperSprites[keeperSprite], playerSpritePosition);
 
-    // Draw key if close to hive
-    // Note: We do this in a different loop, because we want it to render after player.
+    // Find nearest hive  
+    float distanceToNearest = 9999;
     for (unsigned int i = 0; i < gs->numHives; i++) {
         Vector2 hivePixelPos = gardenHexPositionToPixelPosition(gs->hives[i]->position);
         float distance = vector2Distance(gs->playerPosition, hivePixelPos);
-        if (distance < 100) {
-            Vector2 keyZPos = hivePixelPos;
-            keyZPos.x -= 8;
-            keyZPos.y -= 42;
-            drawAnimationFrame(&keyZ, keyZPos);
+        if (distance < distanceToNearest) {
+            distanceToNearest = distance;
+            gs->nearestHive = i; 
         }
+    }
+
+    // If close, show key-z button.
+    if (distanceToNearest < 100) {
+        Vector2 keyZPos = gardenHexPositionToPixelPosition(gs->hives[gs->nearestHive]->position);
+        keyZPos.x -= 8;
+        keyZPos.y -= 42;
+        drawAnimationFrame(&keyZ, keyZPos);
     }
 
     // Draw key if close to shop
