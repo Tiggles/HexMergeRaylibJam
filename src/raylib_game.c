@@ -157,6 +157,7 @@ struct GameState {
 #define DEFAULT_TIME_UNTIL_READY 2
 // CHECK(Brian): Kan hæves her for at lade kæden være større. Vi kunne også sige man kunne committe ved 3 og op efter?
 #define HARVEST_CHAIN_COUNT 3
+#define GRASSGREEN CLITERAL(Color){51, 152, 75, 1}
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
@@ -165,7 +166,6 @@ static const int screenWidth = 720;
 static const int screenHeight = 720;
 static const Vector2 SHOP_POSITION = {660, -20};
 static const int MOVEMENT_SPEED = 200;
-static const Color GRASSGREEN = {51, 152, 75, 1};
 static const int GARDEN_HEX_SIZE = 30;
 static const int HIVE_PRICE = 10000;
 static const int ZINNIAS_PRICE = 500;
@@ -664,38 +664,49 @@ void drawShopScene(void) {
     // Draw background
     DrawTexture(shopBg, 0, 0, WHITE);
 
+    // Draw descriptions
+    DrawTextEx(font20, "A beehive full of bees. Produces delicious honey.", (Vector2){165, 117}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Easy to grow, and comes in a large variety of colors.", (Vector2){165, 237}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Plant near a hive to make the bees produce zinnias (red) honey.", (Vector2){165, 257}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Their open pedals makes it easy for bees to reach the nectar.", (Vector2){165, 357}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Plant near a hive to make the bees produce dahlia (pink) honey.", (Vector2){165, 377}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Bees love the fragrance, which also repels pests.", (Vector2){165, 477}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Plant near a hive to make the bees produce lavender (purple) honey.", (Vector2){165, 497}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Rich in nectar and pollen. A favorite among bees.", (Vector2){165, 597}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Plant near a hive to make the bees produce sunflower (orange) honey.", (Vector2){165, 617}, 20, 0, DARKBROWN);
+
     // Draw prices
     DrawTexture(coin, 500, 170, WHITE);
     if (gs->money >= HIVE_PRICE) {
-        DrawTextEx(font30, TextFormat("%i", HIVE_PRICE), (Vector2){520, 163}, 30, 0, BLACK);
+        DrawTextEx(font30, TextFormat("%i", HIVE_PRICE), (Vector2){520, 163}, 30, 0, DARKBROWN);
     } else {
         DrawTextEx(font30, TextFormat("%i", HIVE_PRICE), (Vector2){520, 163}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 289, WHITE);
     if(gs->money >= ZINNIAS_PRICE) {
-        DrawTextEx(font30, TextFormat("%i", ZINNIAS_PRICE), (Vector2){520, 282}, 30, 0, BLACK);
+        DrawTextEx(font30, TextFormat("%i", ZINNIAS_PRICE), (Vector2){520, 282}, 30, 0, DARKBROWN);
     } else {
         DrawTextEx(font30, TextFormat("%i", ZINNIAS_PRICE), (Vector2){520, 282}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 408, WHITE);
     if(gs->money >= DAHLIAS_PRICE) {
-        DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30, 0, BLACK);
+        DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30, 0, DARKBROWN);
     } else {
         DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 527, WHITE);
     if(gs->money >= LAVENDERS_PRICE) {
-        DrawTextEx(font30, TextFormat("%i", LAVENDERS_PRICE), (Vector2){520, 520}, 30, 0, BLACK);
+        DrawTextEx(font30, TextFormat("%i", LAVENDERS_PRICE), (Vector2){520, 520}, 30, 0, DARKBROWN);
     } else {
         DrawTextEx(font30, TextFormat("%i", LAVENDERS_PRICE), (Vector2){520, 520}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 646, WHITE);
     if(gs->money >= SUNFLOWERS_PRICE) {
-        DrawTextEx(font30, TextFormat("%i", SUNFLOWERS_PRICE), (Vector2){520, 639}, 30, 0, BLACK);
+        DrawTextEx(font30, TextFormat("%i", SUNFLOWERS_PRICE), (Vector2){520, 639}, 30, 0, DARKBROWN);
     } else {
         DrawTextEx(font30, TextFormat("%i", SUNFLOWERS_PRICE), (Vector2){520, 639}, 30, 0, RED);
     }
@@ -853,20 +864,19 @@ void drawGardenScene(void) {
     Vector2 playerSpritePosition = {gs->playerPosition.x-24, gs->playerPosition.y-28};
     drawAnimationFrame(&keeperSprites[keeperSprite], playerSpritePosition);
 
-
-    // If nearest hive is close, show key-z button.
-    Vector2 nearestHivePixelPos = gardenHexPositionToPixelPosition(gs->hives[gs->nearestHive]->position);
-    float distanceToNearestHive = vector2Distance(gs->playerPosition, nearestHivePixelPos);
-    if (distanceToNearestHive < 100) {
-        Vector2 keyZPos = nearestHivePixelPos;
-        keyZPos.x -= 8;
-        keyZPos.y -= 42;
-        drawAnimationFrame(&keyZ, keyZPos);
-    }
-
     // Draw key if close to shop
     if (gs->playerNearShop) {
         drawAnimationFrame(&keyZ, SHOP_POSITION);
+    } else {
+        // If nearest hive is close, show key-z button.
+        Vector2 nearestHivePixelPos = gardenHexPositionToPixelPosition(gs->hives[gs->nearestHive]->position);
+        float distanceToNearestHive = vector2Distance(gs->playerPosition, nearestHivePixelPos);
+        if (distanceToNearestHive < 100) {
+            Vector2 keyZPos = nearestHivePixelPos;
+            keyZPos.x -= 8;
+            keyZPos.y -= 42;
+            drawAnimationFrame(&keyZ, keyZPos);
+        }
     }
 
     EndMode2D();
@@ -1099,20 +1109,20 @@ void drawAbout(void) {
     // Draw background 
     DrawTexture(aboutBg, 0, 0, WHITE);
 
-    DrawTextEx(font20, "Best Bee-uddies is a small game about producing and harvesting honey.", (Vector2){50, 104}, 20, 0, BLACK);
-    DrawTextEx(font20, "The game was made in one week in July 2026 for the Raylib GameJam 6.x.", (Vector2){50, 134}, 20, 0, BLACK);
-    DrawTextEx(font20, "The theme was HEX + MERGE.", (Vector2){50, 164}, 20, 0, BLACK);
-    DrawTextEx(font20, "Brian Ravn (xiroV): Design, Programming, Artwork", (Vector2){50, 214}, 20, 0, BLACK);
-    DrawTextEx(font20, "Jonas Hinchely (Tiggles): Programming", (Vector2){50, 244}, 20, 0, BLACK);
+    DrawTextEx(font20, "Best Bee-uddies is a small game about producing and harvesting honey.", (Vector2){50, 104}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "The game was made in one week in July 2026 for the Raylib GameJam 6.x.", (Vector2){50, 134}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "The theme was HEX + MERGE.", (Vector2){50, 164}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Brian Ravn (xiroV): Design, Programming, Artwork", (Vector2){50, 214}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Jonas Hinchely (Tiggles): Programming", (Vector2){50, 244}, 20, 0, DARKBROWN);
 
-    DrawTextEx(font20, "Music:", (Vector2) {50, 274}, 20, 0, BLACK);
-    DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera", (Vector2) { 50, 304 }, 20, 0, BLACK);
-    DrawTextEx(font20, "-- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 316 }, 20, 0, BLACK);
-    DrawTextEx(font20, "Sounds:", (Vector2) { 50, 344 }, 20, 0, BLACK);
-    DrawTextEx(font20, "Cha_Ching.mp3 by Lucish_ -- https://freesound.org/s/554841/ -- License: Attribution 3.0", (Vector2) { 50, 374 }, 20, 0, BLACK);
-    DrawTextEx(font20, "rabbit - thump - on - soil - edited.wav by bunnyluvvid", (Vector2) { 50, 404 }, 20, 0, BLACK);
-    DrawTextEx(font20, "-- https://freesound.org/s/431204/ -- License: Creative Commons 0", (Vector2) { 50, 416 }, 20, 0, BLACK);
-    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 444}, 20, 0, BLACK);
+    DrawTextEx(font20, "Music:", (Vector2) {50, 274}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera", (Vector2) { 50, 304 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "-- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 316 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Sounds:", (Vector2) { 50, 344 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Cha_Ching.mp3 by Lucish_ -- https://freesound.org/s/554841/ -- License: Attribution 3.0", (Vector2) { 50, 374 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "rabbit - thump - on - soil - edited.wav by bunnyluvvid", (Vector2) { 50, 404 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "-- https://freesound.org/s/431204/ -- License: Creative Commons 0", (Vector2) { 50, 416 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 444}, 20, 0, DARKBROWN);
 
     // Draw buttons
     drawButton(&backToMenuButton);
@@ -1334,6 +1344,7 @@ static void printFlowerWithPos(FlowerType type, int row, int column) {
             printf("SUNFLOWERS! ");
             break;
         }
+        default: {}
     }
     printf(", c: %i, r: %i\n", column, row);
 }
