@@ -240,7 +240,7 @@ static int isTileNeighbor(Vector2 currentTile, Vector2 newTile);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
 static Vector2 mouseToHexPointCoordinates();
-static FlowerType chooseFlower();
+static FlowerType chooseFlower(Hive *h);
 static Vector2 hexDrawingCoordinates(Vector2 pos);
 static void drawHarvestScene(void);
 static void drawButton(Button* button);
@@ -1379,10 +1379,9 @@ static void assignHexTile(Hive *h) {
             if (h->hexes[c][r]->flowerType != FLOWER_EMPTY) continue;
             h->hexes[c][r]->flowerType = chooseFlower(h);
             h->hexes[c][r]->timeUntilReadyMS = DEFAULT_TIME_UNTIL_READY;
-            return;   
+            return;
         }
     }
-    // TODO(Jonas): Check everything filled
 }
 
 static void drawHarvestScene(void) {
@@ -1556,7 +1555,7 @@ static void harvestActiveChain(void) {
         p->x = -1;
         p->y = -1;
         
-        h->flowerType = FLOWER_NONE;
+        h->flowerType = FLOWER_EMPTY;
         h->timeUntilReadyMS = -1;
     }
     gs->jar.iteration += 1;
