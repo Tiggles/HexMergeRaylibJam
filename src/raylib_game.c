@@ -145,6 +145,7 @@ struct GameState {
     BuildType currentlyBuilding;
 } GameState;
 
+#define VERSION "0.1"
 #define JAR_ITERATIONS 11
 #define COLUMN_COUNT 14
 #define ROW_COUNT_EVEN 15
@@ -1077,6 +1078,9 @@ static void drawButton(Button* button) {
 void drawMenu(void) {
     // Draw background 
     DrawTexture(menuBg, 0, 0, WHITE);
+
+    // Draw version
+    DrawTextEx(font20, TextFormat("v%s", VERSION), (Vector2){680,690}, 20, 0, WHITE);
 
     // Draw buttons
     drawButton(&startButton);
