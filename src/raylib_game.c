@@ -196,6 +196,7 @@ static Camera2D gardenCamera;
 static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
 };
+Music music;
 
 static Vector2 harvestChain[HARVEST_CHAIN_COUNT];
 
@@ -256,6 +257,7 @@ int main(void)
     // Initialization
     //--------------------------------------------------------------------------------------
     InitWindow(screenWidth, screenHeight, "Best Bee-uddies");
+    InitAudioDevice();
 
     // Check(Brian): Fjerner muligheden for at lukke spillet med Escape. Vil gerne bruge escape til at afbryde en kæde ved harvesting.
     SetExitKey(KEY_NULL);
@@ -332,8 +334,13 @@ int main(void)
         keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 4, 200);
         keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 4, 200);
         honeyGlassSprites = loadAnimation("../../../src/resources/honey_glass.png", 11, 0);
+        
+        // Fonts
         font20 = LoadFontEx("../../../src/resources/fonts/Jersey_10/Jersey10-Regular.ttf", 20, 0, 250);
         font30 = LoadFontEx("../../../src/resources/fonts/Jersey_10/Jersey10-Regular.ttf", 30, 0, 250);
+
+        // Music
+        music = LoadMusicStream("../../../src/resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
 #else
         hiveSprite = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
@@ -370,6 +377,9 @@ int main(void)
         honeyGlassSprites = loadAnimation("resources/honey_glass.png", 11, 0);
         font20 = LoadFontEx("resources/fonts/Jersey_10/Jersey10-Regular.ttf", 20, 0, 250);
         font30 = LoadFontEx("resources/fonts/Jersey_10/Jersey10-Regular.ttf", 30, 0, 250);
+
+        // Music
+        music = LoadMusicStream("resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
@@ -382,6 +392,9 @@ int main(void)
     backToGardenButton.position = (Vector2){570, 640};
     sellHoneyButton.position = (Vector2){570, 602};
 
+    PlayMusicStream(music);
+    SetMusicPan(music, 0.0);
+    SetMusicVolume(music, 0.8);
 
     // TODO: Load resources / Initialize variables at this point
 
@@ -1034,7 +1047,10 @@ void drawAbout(void) {
     DrawTextEx(font20, "The theme was HEX + MERGE.", (Vector2){50, 164}, 20, 0, BLACK);
     DrawTextEx(font20, "Brian Ravn (xiroV): Design, Programming, Artwork", (Vector2){50, 214}, 20, 0, BLACK);
     DrawTextEx(font20, "Jonas Hinchely (Tiggles): Programming", (Vector2){50, 244}, 20, 0, BLACK);
-    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 294}, 20, 0, BLACK);
+
+    DrawTextEx(font20, "Music:", (Vector2) {50, 274}, 20, 0, BLACK);
+    DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera \n -- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 304 }, 20, 0, BLACK);
+    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 374}, 20, 0, BLACK);
 
     // Draw buttons
     drawButton(&backToMenuButton);
@@ -1056,6 +1072,7 @@ void UpdateDrawFrame(void)
     //----------------------------------------------------------------------------------
     gs->playerMoving = false;
     SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+    UpdateMusicStream(music);
 
     // Handle next placement of hex-content
     if (gs->currentScene != ABOUT && gs->currentScene != MENU) {
