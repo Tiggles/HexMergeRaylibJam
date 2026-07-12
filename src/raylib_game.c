@@ -145,7 +145,7 @@ struct GameState {
     BuildType currentlyBuilding;
 } GameState;
 
-#define VERSION "0.2"
+#define VERSION "0.3"
 #define JAR_ITERATIONS 11
 #define COLUMN_COUNT 14
 #define ROW_COUNT_EVEN 15
@@ -1528,9 +1528,10 @@ static void drawHarvestScene(void) {
         DrawTexture(hexOutline, pos.x, pos.y, WHITE);
     }
 
-    DrawTextEx(font20, "Click 3 adjacent tiles to merge and harvest honey", (Vector2){ 215, 530}, 20, 0, WHITE);
+    DrawTextEx(font20, "Click 3 adjacent filled tiles to merge and harvest honey", (Vector2){ 215, 530}, 20, 0, WHITE);
     DrawTextEx(font20, "Click alternate colors for higher multiplier", (Vector2) { 245, 550 }, 20, 0, WHITE);
     DrawTextEx(font20, "Click \"Sell honey\" when the jar is full, to continue harvesting", (Vector2) { 180, 570 }, 20, 0, WHITE);
+    DrawTextEx(font20, "Right click to cancel tile selection", (Vector2) { 270, 590 }, 20, 0, WHITE);
 
     drawJar();
 }
