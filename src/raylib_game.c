@@ -1328,46 +1328,56 @@ static int isInHive(Hive* h, int row, int column) {
 }
 
 static FlowerType chooseFlower(Hive *h) {
-    FlowerType t = FLOWER_NONE;
     Vector2 hivePosition = h->position;
-    int column = GetRandomValue(-1 + h->position.y, 1 + h->position.y);
-    if (column < 0) column = 0;
-    if (column >= 13) column = 13 - 1;
-    int row = 0;
-    int isEven = column % 2 == 0;
-    if (isEven) {
-        row = GetRandomValue(h->position.x, h->position.x + 1);
-        if (row >= 13) row = 13 - 1;
-    } else {
-        row = GetRandomValue(h->position.x - 1, h->position.x);
-        if (row >= 12) row = 12 - 1;
-    }
-    if (row < 0) row = 0;
 
-    /*
-    if (isInHive(h, row, column)) {
-        if (column <= 0) column += 1;
-        else if (column >= 13 - 1) column -= 1;
-        else if (row <= 0) row += 1;
-        else if (isEven) {
-            if (row >= 13 - 1) row -= 1;
-        } else {
-            if (row >= 12 - 1) row -= 1;
-        }
-    }
-    */
-
+    int total = 8;
+    int zinnias = 0;
+    int dahlias = 0;
+    int lavenders = 0;
+    int sunflowers = 0;
+    
     for (int i = 0; i < gs->numFlowers; i++) {
         Flower *f = gs->flowers[i];
-        if (f->position.x == row && f->position.y == column) {
-            //printFlowerWithPos(f->type, row, column);
-            return f->type;
+        if (isTileNeighbor(f->position, hivePosition)) {
+            switch (f->type) {
+                case FLOWER_NONE:
+                    break;
+                case FLOWER_ZINNIAS:
+                    zinnias += 1;
+                    break;
+                case FLOWER_DAHLIAS:
+                    zinnias += 1;
+                    break;
+                case FLOWER_LAVENDERS:
+                    lavenders += 1;
+                    break;
+                case FLOWER_SUNFLOWERS:
+                    sunflowers += 1;
+                    break;
+            }
         }
     }
+    
+    int val = GetRandomValue(0, total);
 
-    //printf("Not found, ");
-    //printFlowerWithPos(t, row, column);
-    return t;
+    if (val < zinnias) {
+        return FLOWER_ZINNIAS;
+    }
+    val -= zinnias;
+    if (val < dahlias) {
+        return FLOWER_DAHLIAS;
+    }
+    val -= dahlias;
+    if (val < lavenders) {
+        return FLOWER_LAVENDERS;
+    }
+    val -= lavenders;
+    if (val < sunflowers) {
+        return FLOWER_SUNFLOWERS;
+    }
+
+    return FLOWER_NONE;
+
 }
 
 static void assignHexTile(Hive *h) {
