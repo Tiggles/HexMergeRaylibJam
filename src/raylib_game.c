@@ -118,6 +118,7 @@ typedef struct Hive {
     Vector2 position; // position on garden hexgrid
     HarvestHex*** hexes;
     float nextHexStartFill;
+    Animation animation;
 } Hive;
 
 typedef struct Jar {
@@ -172,7 +173,7 @@ static const int LAVENDERS_PRICE = 2000;
 static const int SUNFLOWERS_PRICE = 5000;
 static const int STARTING_MONEY = 100000;
 
-static Animation hiveSprite;
+static Texture2D hiveSprite;
 static Texture2D harvestBg;
 static Texture2D menuBg;
 static Texture2D gardenBg;
@@ -223,7 +224,8 @@ struct GameState *gs = NULL;
 static void UpdateDrawFrame(void);      // Update and Draw one frame
                                         
 static float vector2Distance(Vector2, Vector2);
-static Animation loadAnimation(char* fileName, int numFrames, int intervalMs);
+static Animation initAnimation(char* fileName, int numFrames, int intervalMs);
+static Animation initAnimationFromTexture(Texture2D texture, int numFrames, int intervalMs);
 static void drawAnimationFrame(Animation* animation, Vector2 position);
 static void unloadAnimation(Animation* animation);
 static void drawHex();
@@ -301,13 +303,13 @@ int main(void)
     gardenCamera.zoom = 2.0f;
 
 #if defined(WIN32)     
-        hiveSprite = loadAnimation("../../../src/resources/hive.png", 3, 200);
+        hiveSprite = LoadTexture("../../../src/resources/hive.png");
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
         menuBg = LoadTexture("../../../src/resources/menu_bg.png");
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         aboutBg = LoadTexture("../../../src/resources/about_bg.png");
-        keyZ = loadAnimation("../../../src/resources/key_z.png", 10, 200);
+        keyZ = initAnimation("../../../src/resources/key_z.png", 10, 200);
         coin = LoadTexture("../../../src/resources/coin.png");
         zinniasSprite = LoadTexture("../../../src/resources/zinnias.png");
         dahliasSprite = LoadTexture("../../../src/resources/dahlias.png");
@@ -327,14 +329,14 @@ int main(void)
         sellHoneyButton.texture = LoadTexture("../../../src/resources/sell_honey_button.png");
         backToGardenButton.texture = LoadTexture("../../../src/resources/back_to_garden_button.png");
 
-        keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
-        keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
-        keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
-        keeperSprites[WALK_DOWN] = loadAnimation("../../../src/resources/character_walk_down.png", 6, 100);
-        keeperSprites[WALK_UP] = loadAnimation("../../../src/resources/character_walk_up.png", 6, 100);
-        keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 4, 200);
-        keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 4, 200);
-        honeyGlassSprites = loadAnimation("../../../src/resources/honey_glass.png", 11, 0);
+        keeperSprites[BACK] = initAnimation("../../../src/resources/character_back.png", 2, 500);
+        keeperSprites[FRONT] = initAnimation("../../../src/resources/character_front.png", 2, 500);
+        keeperSprites[SIDE] = initAnimation("../../../src/resources/character_side.png", 2, 500);
+        keeperSprites[WALK_DOWN] = initAnimation("../../../src/resources/character_walk_down.png", 6, 100);
+        keeperSprites[WALK_UP] = initAnimation("../../../src/resources/character_walk_up.png", 6, 100);
+        keeperSprites[WALK_LEFT] = initAnimation("../../../src/resources/character_walk_left.png", 4, 200);
+        keeperSprites[WALK_RIGHT] = initAnimation("../../../src/resources/character_walk_right.png", 4, 200);
+        honeyGlassSprites = initAnimation("../../../src/resources/honey_glass.png", 11, 0);
         
         // Fonts
         font20 = LoadFontEx("../../../src/resources/fonts/Jersey_10/Jersey10-Regular.ttf", 20, 0, 250);
@@ -343,13 +345,13 @@ int main(void)
         // Music
         music = LoadMusicStream("../../../src/resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
 #else
-        hiveSprite = loadAnimation("resources/hive.png", 3, 200);
+        hiveSprite = LoadTexture("resources/hive.png");
         harvestBg = LoadTexture("resources/harvest_bg.png");
         menuBg = LoadTexture("resources/menu_bg.png");
         gardenBg = LoadTexture("resources/garden_bg.png");
         shopBg = LoadTexture("resources/shop_bg.png");
         aboutBg = LoadTexture("resources/about_bg.png");
-        keyZ = loadAnimation("resources/key_z.png", 10, 200);
+        keyZ = initAnimation("resources/key_z.png", 10, 200);
         coin = LoadTexture("resources/coin.png");
         zinniasSprite = LoadTexture("resources/zinnias.png");
         dahliasSprite = LoadTexture("resources/dahlias.png");
@@ -368,14 +370,14 @@ int main(void)
         backToMenuButton.texture = LoadTexture("resources/back_to_menu_button.png");
         backToGardenButton.texture = LoadTexture("resources/back_to_garden_button.png");
         sellHoneyButton.texture = LoadTexture("resources/sell_honey_button.png");
-        keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
-        keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
-        keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
-        keeperSprites[WALK_DOWN] = loadAnimation("resources/character_walk_down.png", 6, 100);
-        keeperSprites[WALK_UP] = loadAnimation("resources/character_walk_up.png", 6, 100);
-        keeperSprites[WALK_LEFT] = loadAnimation("resources/character_walk_left.png", 4, 200);
-        keeperSprites[WALK_RIGHT] = loadAnimation("resources/character_walk_right.png", 4, 200);
-        honeyGlassSprites = loadAnimation("resources/honey_glass.png", 11, 0);
+        keeperSprites[BACK] = initAnimation("resources/character_back.png", 2, 500);
+        keeperSprites[FRONT] = initAnimation("resources/character_front.png", 2, 500);
+        keeperSprites[SIDE] = initAnimation("resources/character_side.png", 2, 500);
+        keeperSprites[WALK_DOWN] = initAnimation("resources/character_walk_down.png", 6, 100);
+        keeperSprites[WALK_UP] = initAnimation("resources/character_walk_up.png", 6, 100);
+        keeperSprites[WALK_LEFT] = initAnimation("resources/character_walk_left.png", 4, 200);
+        keeperSprites[WALK_RIGHT] = initAnimation("resources/character_walk_right.png", 4, 200);
+        honeyGlassSprites = initAnimation("resources/honey_glass.png", 11, 0);
         font20 = LoadFontEx("resources/fonts/Jersey_10/Jersey10-Regular.ttf", 20, 0, 250);
         font30 = LoadFontEx("resources/fonts/Jersey_10/Jersey10-Regular.ttf", 30, 0, 250);
 
@@ -427,7 +429,9 @@ int main(void)
     UnloadRenderTexture(target);
 
     // TODO: Unload all loaded resources at this point
-    unloadAnimation(&hiveSprite);
+    for (unsigned int i = 0; i < gs->numHives; i++) {
+        unloadAnimation(&gs->hives[i]->animation);
+    }
     UnloadFont(font20);
     UnloadFont(font30);
 
@@ -471,9 +475,19 @@ static void drawGardenHexFilled(Vector2 center, Color color) {
 }
 
 // Load an animation (spritesheet) into memory with a set of animation parameters.
-static Animation loadAnimation(char* fileName, int numFrames, int intervalMs) {
+static Animation initAnimation(char* fileName, int numFrames, int intervalMs) {
     return (Animation) {
         .texture = LoadTexture(fileName),
+        .frame = 0,
+        .intervalMs = intervalMs,
+        .numFrames = numFrames,
+        .lastDraw = 0,
+    };
+}
+
+static Animation initAnimationFromTexture(Texture2D texture, int numFrames, int intervalMs) {
+    return (Animation) {
+        .texture = texture,
         .frame = 0,
         .intervalMs = intervalMs,
         .numFrames = numFrames,
@@ -581,7 +595,7 @@ void drawHives(void) {
         Vector2 hivePixelPosition = gardenHexPositionToPixelPosition(gs->hives[i]->position);
         hivePixelPosition.x -= 32;
         hivePixelPosition.y -= 55;
-        drawAnimationFrame(&hiveSprite, hivePixelPosition);
+        drawAnimationFrame(&gs->hives[i]->animation, hivePixelPosition);
     }
 }
 
@@ -709,7 +723,7 @@ void drawBuildScene(void) {
 
     switch (gs->currentlyBuilding) {
         case BUILD_HIVE:
-            drawAnimationFrame(&hiveSprite, (Vector2){chosenHexPixelCoord.x - 32, chosenHexPixelCoord.y - 55});
+            DrawTextureRec(hiveSprite, (Rectangle){0, 0, hiveSprite.width/3.0f, hiveSprite.height}, (Vector2){chosenHexPixelCoord.x - 32, chosenHexPixelCoord.y - 55}, WHITE);
             break;
         case BUILD_ZINNIAS:
             DrawTextureV(zinniasSprite, (Vector2){chosenHexPixelCoord.x - 20, chosenHexPixelCoord.y-30}, WHITE);
@@ -1226,6 +1240,8 @@ static Hive* initHive(unsigned int x, unsigned int y) {
 
     h->position = (Vector2){x, y};
     h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
+    h->animation = initAnimationFromTexture(hiveSprite, 3, 200);
+
     return h;
 }
 
