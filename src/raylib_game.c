@@ -145,7 +145,7 @@ struct GameState {
     BuildType currentlyBuilding;
 } GameState;
 
-#define VERSION "0.1"
+#define VERSION "0.2"
 #define JAR_ITERATIONS 11
 #define COLUMN_COUNT 14
 #define ROW_COUNT_EVEN 15
