@@ -100,6 +100,7 @@ typedef struct Button {
     Texture2D texture;
     bool isHovered;
     bool isClicked;
+    bool isDisabled;
     Vector2 position;
 } Button;
 
@@ -150,7 +151,7 @@ struct GameState {
 #define INITIAL_OFFSET_Y 12
 #define MOD_OFFSET_X  4
 #define UNEVEN_ROW_X_OFFSET 23
-#define NEXT_FILL_TIME_IN_SECONDS 4
+#define NEXT_FILL_TIME_IN_SECONDS 1
 #define DEFAULT_TIME_UNTIL_READY 2
 // CHECK(Brian): Kan hæves her for at lade kæden være større. Vi kunne også sige man kunne committe ved 3 og op efter?
 #define HARVEST_CHAIN_COUNT 3
@@ -386,11 +387,17 @@ int main(void)
     
     // Initialize buttons
     startButton.position = (Vector2){20, 600};
+    startButton.isDisabled = false;
     menuButton.position = (Vector2){20, 600};
+    menuButton.isDisabled = false;
     aboutButton.position = (Vector2){122, 600};
+    aboutButton.isDisabled = false;
     backToMenuButton.position = (Vector2){549, 26};
+    backToMenuButton.isDisabled = false;
     backToGardenButton.position = (Vector2){570, 640};
+    backToGardenButton.isDisabled = false;
     sellHoneyButton.position = (Vector2){570, 602};
+    sellHoneyButton.isDisabled = false;
 
     PlayMusicStream(music);
     SetMusicPan(music, 0.0);
@@ -999,12 +1006,17 @@ static void drawButton(Button* button) {
     int buttonWidth = button->texture.width / 2;
     Rectangle buttonRec = {0, 0, buttonWidth, button->texture.height};
 
-    if (button->isHovered) {
+    if (button->isHovered && !button->isDisabled) {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
         buttonRec.x = buttonWidth;
     }
 
-    DrawTextureRec(button->texture, buttonRec, button->position, WHITE);
+    Color color = WHITE;
+
+    if (button->isDisabled) {
+        color = (Color){ .r = GRAY.r, .g = GRAY.g, .b = GRAY.b, .a = 150 };
+    }
+    DrawTextureRec(button->texture, buttonRec, button->position, color);
 }
 
 void drawMenu(void) {
@@ -1398,10 +1410,13 @@ static void drawHarvestScene(void) {
 
 static void updateHarvestScene() {
     updateButton(&sellHoneyButton);
+    sellHoneyButton.isDisabled = gs->jar.iteration != JAR_ITERATIONS - 1;
     updateButton(&backToGardenButton);
 
-    if (sellHoneyButton.isClicked) {
-        // TODO 
+    if (!sellHoneyButton.isDisabled && sellHoneyButton.isClicked) {
+        gs->jar.iteration = 0;
+        gs->money += gs->jar.value;
+        gs->jar.value = 0;
     }
 
     if (backToGardenButton.isClicked) {
@@ -1417,6 +1432,7 @@ static void updateHarvestScene() {
     Hive *h = gs->hives[gs->activeHiveIndex];
 
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        if (gs->jar.iteration == JAR_ITERATIONS - 1) return;
         Vector2 point = mouseToHexPointCoordinates();
         if (point.x == -1 && point.y == -1) return;
         HarvestHex *hex = h->hexes[(int)point.y][(int)point.x];
@@ -1444,7 +1460,6 @@ static void updateHarvestScene() {
                     // Priorier entry
                     Vector2 hex = harvestChain[firstFreeIdx - 1];
                     if (!isTileNeighbor(hex, point)) {
-                        printf("Is not neighbor, so we bail");
                         return;
                     }
                 }
@@ -1500,12 +1515,6 @@ static void harvestActiveChain(void) {
     }
     gs->jar.iteration += 1;
     gs->jar.value += money;
-
-    if (gs->jar.iteration == JAR_ITERATIONS) {
-        gs->jar.iteration = 0;
-        gs->money += gs->jar.value;
-        gs->jar.value = 0;
-    }
 }
 
 static void clearHarvestChain() {
@@ -1540,9 +1549,9 @@ static void drawJar() {
 // TODOS!
 // - [X] Harvesting chain
 // - [X] Fill jars (?) and sell
-// - [ ] Leave HARVEST scene
-// - [ ] Flowers must affect hexes
-// - [ ] Music
+// - [X] Leave HARVEST scene
+// - [X] Flowers must affect hexes
+// - [X] Music
 // - [ ] Sounds
 // - [ ] Fancy animation when honeyGlass is filled
 // - [ ] Lower row of harvesting grid has funky behaviour
