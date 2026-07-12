@@ -241,7 +241,7 @@ static int isTileNeighbor(Vector2 currentTile, Vector2 newTile);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
 static Vector2 mouseToHexPointCoordinates();
-static FlowerType chooseFlower();
+static FlowerType chooseFlower(Hive *h);
 static Vector2 hexDrawingCoordinates(Vector2 pos);
 static void drawHarvestScene(void);
 static void updateButton(Button* button);
@@ -468,7 +468,13 @@ static void drawHex() {
     Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
     if (point.x == -1 || point.y == -1) return;
     Vector2 pos = hexDrawingCoordinates(point);
-    DrawTexture(hexOutlineLight, pos.x, pos.y, WHITE);
+    Color color = WHITE;
+    if (gs->jar.iteration == JAR_ITERATIONS - 1) {
+        color.r = 255;
+        color.g = 0;
+        color.b = 0;
+    }
+    DrawTexture(hexOutlineLight, pos.x, pos.y, color);
 }
 
 static Vector2 hexDrawingCoordinates(Vector2 pos) {
@@ -1348,46 +1354,56 @@ static int isInHive(Hive* h, int row, int column) {
 }
 
 static FlowerType chooseFlower(Hive *h) {
-    FlowerType t = FLOWER_NONE;
     Vector2 hivePosition = h->position;
-    int column = GetRandomValue(-1 + h->position.y, 1 + h->position.y);
-    if (column < 0) column = 0;
-    if (column >= 13) column = 13 - 1;
-    int row = 0;
-    int isEven = column % 2 == 0;
-    if (isEven) {
-        row = GetRandomValue(h->position.x, h->position.x + 1);
-        if (row >= 13) row = 13 - 1;
-    } else {
-        row = GetRandomValue(h->position.x - 1, h->position.x);
-        if (row >= 12) row = 12 - 1;
-    }
-    if (row < 0) row = 0;
 
-    /*
-    if (isInHive(h, row, column)) {
-        if (column <= 0) column += 1;
-        else if (column >= 13 - 1) column -= 1;
-        else if (row <= 0) row += 1;
-        else if (isEven) {
-            if (row >= 13 - 1) row -= 1;
-        } else {
-            if (row >= 12 - 1) row -= 1;
-        }
-    }
-    */
-
+    int total = 7;
+    int zinnias = 0;
+    int dahlias = 0;
+    int lavenders = 0;
+    int sunflowers = 0;
+    
     for (int i = 0; i < gs->numFlowers; i++) {
         Flower *f = gs->flowers[i];
-        if (f->position.x == row && f->position.y == column) {
-            //printFlowerWithPos(f->type, row, column);
-            return f->type;
+        if (isTileNeighbor(f->position, hivePosition)) {
+            switch (f->type) {
+                case FLOWER_NONE:
+                    break;
+                case FLOWER_ZINNIAS:
+                    zinnias += 1;
+                    break;
+                case FLOWER_DAHLIAS:
+                    zinnias += 1;
+                    break;
+                case FLOWER_LAVENDERS:
+                    lavenders += 1;
+                    break;
+                case FLOWER_SUNFLOWERS:
+                    sunflowers += 1;
+                    break;
+            }
         }
     }
+    
+    int val = GetRandomValue(0, total);
 
-    //printf("Not found, ");
-    //printFlowerWithPos(t, row, column);
-    return t;
+    if (val < zinnias) {
+        return FLOWER_ZINNIAS;
+    }
+    val -= zinnias;
+    if (val < dahlias) {
+        return FLOWER_DAHLIAS;
+    }
+    val -= dahlias;
+    if (val < lavenders) {
+        return FLOWER_LAVENDERS;
+    }
+    val -= lavenders;
+    if (val < sunflowers) {
+        return FLOWER_SUNFLOWERS;
+    }
+
+    return FLOWER_NONE;
+
 }
 
 static void assignHexTile(Hive *h) {
@@ -1399,10 +1415,9 @@ static void assignHexTile(Hive *h) {
             if (h->hexes[c][r]->flowerType != FLOWER_EMPTY) continue;
             h->hexes[c][r]->flowerType = chooseFlower(h);
             h->hexes[c][r]->timeUntilReadyMS = DEFAULT_TIME_UNTIL_READY;
-            return;   
+            return;
         }
     }
-    // TODO(Jonas): Check everything filled
 }
 
 static void drawHarvestScene(void) {
@@ -1463,6 +1478,10 @@ static void drawHarvestScene(void) {
         Vector2 pos = hexDrawingCoordinates(v);
         DrawTexture(hexOutline, pos.x, pos.y, WHITE);
     }
+
+    DrawTextEx(font20, "Click 3 adjacent tiles to merge and harvest honey", (Vector2){ 215, 530}, 20, 0, WHITE);
+    DrawTextEx(font20, "Click alternate colors for higher multiplier", (Vector2) { 245, 550 }, 20, 0, WHITE);
+    DrawTextEx(font20, "Click \"Sell honey\" when the jar is full, to continue harvesting", (Vector2) { 180, 570 }, 20, 0, WHITE);
 
     drawJar();
 }
@@ -1560,14 +1579,13 @@ static int flowerTypeToMoney(FlowerType t) {
 
 static void harvestActiveChain(void) {
     int money = 0;
-    float multiplier = 1.0;
+    float multiplier = 0.8;
     FlowerType lastFlowerType = FLOWER_EMPTY;
     for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
         Vector2 *p = &harvestChain[i];
         HarvestHex *h = gs->hives[gs->activeHiveIndex]->hexes[(int)p->y][(int)p->x];
         FlowerType currentFlowerType = h->flowerType;
-        if (currentFlowerType == lastFlowerType) {
-            // CHECK(Brian): Multiplier fine?
+        if (currentFlowerType != lastFlowerType) {
             multiplier += 0.2;
         }
         lastFlowerType = currentFlowerType;
@@ -1576,7 +1594,7 @@ static void harvestActiveChain(void) {
         p->x = -1;
         p->y = -1;
         
-        h->flowerType = FLOWER_NONE;
+        h->flowerType = FLOWER_EMPTY;
         h->timeUntilReadyMS = -1;
     }
     gs->jar.iteration += 1;
