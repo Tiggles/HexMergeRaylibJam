@@ -171,7 +171,6 @@ static const int LAVENDERS_PRICE = 2000;
 static const int SUNFLOWERS_PRICE = 5000;
 static const int STARTING_MONEY = 100000;
 
-static float nextSceneChange = 0.0;
 static Animation hiveSprite;
 static Texture2D harvestBg;
 static Texture2D menuBg;
@@ -234,7 +233,7 @@ static int isTileNeighbor(Vector2 currentTile, Vector2 newTile);
 static Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates);
 static Vector2 gardenHexFromPoint(Vector2 point);
 static Vector2 mouseToHexPointCoordinates();
-static FlowerType randomFlower();
+static FlowerType chooseFlower();
 static Vector2 hexDrawingCoordinates(Vector2 pos);
 static void drawHarvestScene(void);
 static void drawButton(Button* button);
@@ -242,6 +241,7 @@ static void updateHarvestScene(void);
 static void clearHarvestChain(void);
 static void drawJar(void);
 static void harvestActiveChain(void);
+static void printFlowerWithPos(FlowerType type, int row, int column);
 
 
 //------------------------------------------------------------------------------------
@@ -1057,15 +1057,6 @@ void UpdateDrawFrame(void)
     gs->playerMoving = false;
     SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
-
-    if (IsKeyDown(KEY_TAB)) {
-        if (nextSceneChange < 0) {
-            gs->currentScene = (gs->currentScene + 1) % 5;
-            nextSceneChange = 0.2;
-        }
-        nextSceneChange -= GetFrameTime();
-    }
-
     // Handle next placement of hex-content
     if (gs->currentScene != ABOUT && gs->currentScene != MENU) {
         float delta = GetFrameTime();
@@ -1074,6 +1065,7 @@ void UpdateDrawFrame(void)
             if (h->nextHexStartFill > 0) {
                 h->nextHexStartFill -= delta;
             } else {
+                //printf("hive idx: %i, c: %i, r: %i, ", i, h->position.y, h->position.x);
                 assignHexTile(h);
                 h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
             }
@@ -1091,9 +1083,6 @@ void UpdateDrawFrame(void)
             }
         }
     }
-    
-    // Could also be done on leaving HARVEST scene.
-    if (gs->currentScene != HARVEST) clearHarvestChain();
 
     switch (gs->currentScene) {
         case GARDEN:
@@ -1243,17 +1232,86 @@ static int isTileNeighbor(Vector2 t1, Vector2 t2) {
     return false;
 }
 
-FlowerType randomFlower() {
-    return GetRandomValue(0, 3);
+static void printFlowerWithPos(FlowerType type, int row, int column) {
+    switch (type) {
+        case FLOWER_NONE:
+            printf("None! ");
+            break;
+        case FLOWER_ZINNIAS: {
+            printf("Zinnias! ");
+            break;
+        }
+        case FLOWER_DAHLIAS: {
+            printf("DAHLIAS! ");
+            break;
+        }
+        case FLOWER_LAVENDERS: {
+            printf("LAVENDERS! ");
+            break;
+        }
+        case FLOWER_SUNFLOWERS: {
+            printf("SUNFLOWERS! ");
+            break;
+        }
+    }
+    printf(", c: %i, r: %i\n", column, row);
+}
+
+static int isInHive(Hive* h, int row, int column) {
+    return (column == h->position.y && row == h->position.x);
+}
+
+static FlowerType chooseFlower(Hive *h) {
+    FlowerType t = FLOWER_SUNFLOWERS;
+    Vector2 hivePosition = h->position;
+    int column = GetRandomValue(-1 + h->position.y, 1 + h->position.y);
+    if (column < 0) column = 0;
+    if (column >= 13) column = 13 - 1;
+    int row = 0;
+    int isEven = column % 2 == 0;
+    if (isEven) {
+        row = GetRandomValue(h->position.x, h->position.x + 1);
+        if (row >= 13) row = 13 - 1;
+    } else {
+        row = GetRandomValue(h->position.x - 1, h->position.x);
+        if (row >= 12) row = 12 - 1;
+    }
+    if (row < 0) row = 0;
+
+    /*
+    if (isInHive(h, row, column)) {
+        if (column <= 0) column += 1;
+        else if (column >= 13 - 1) column -= 1;
+        else if (row <= 0) row += 1;
+        else if (isEven) {
+            if (row >= 13 - 1) row -= 1;
+        } else {
+            if (row >= 12 - 1) row -= 1;
+        }
+    }
+    */
+
+    for (int i = 0; i < gs->numFlowers; i++) {
+        Flower *f = gs->flowers[i];
+        if (f->position.x == row && f->position.y == column) {
+            //printFlowerWithPos(f->type, row, column);
+            return f->type;
+        }
+    }
+
+    //printf("Not found, ");
+    //printFlowerWithPos(t, row, column);
+    return t;
 }
 
 static void assignHexTile(Hive *h) {
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             int c = GetRandomValue(0, COLUMN_COUNT - 1);
-            int r = GetRandomValue(0, c % 2 == 0 ? ROW_COUNT_EVEN - 1 : ROW_COUNT_UNEVEN - 1);
+            int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
+            int r = GetRandomValue(0, rowCount - 1);
             if (h->hexes[c][r]->flowerType != FLOWER_NONE) continue;
-            h->hexes[c][r]->flowerType = randomFlower();
+            h->hexes[c][r]->flowerType = chooseFlower(h);
             h->hexes[c][r]->timeUntilReadyMS = DEFAULT_TIME_UNTIL_READY;
             return;   
         }
@@ -1330,6 +1388,7 @@ static void updateHarvestScene() {
     }
 
     if (backToGardenButton.isClicked) {
+        clearHarvestChain();
         gs->currentScene = GARDEN;
     }
 
