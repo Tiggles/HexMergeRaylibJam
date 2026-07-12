@@ -462,7 +462,13 @@ static void drawHex() {
     Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
     if (point.x == -1 || point.y == -1) return;
     Vector2 pos = hexDrawingCoordinates(point);
-    DrawTexture(hexOutlineLight, pos.x, pos.y, WHITE);
+    Color color = WHITE;
+    if (gs->jar.iteration == JAR_ITERATIONS - 1) {
+        color.r = 255;
+        color.g = 0;
+        color.b = 0;
+    }
+    DrawTexture(hexOutlineLight, pos.x, pos.y, color);
 }
 
 static Vector2 hexDrawingCoordinates(Vector2 pos) {
@@ -1453,6 +1459,10 @@ static void drawHarvestScene(void) {
         DrawTexture(hexOutline, pos.x, pos.y, WHITE);
     }
 
+    DrawTextEx(font20, "Click 3 adjacent tiles to merge and harvest honey", (Vector2){ 215, 530}, 20, 0, WHITE);
+    DrawTextEx(font20, "Click alternate colors for higher multiplier", (Vector2) { 245, 550 }, 20, 0, WHITE);
+    DrawTextEx(font20, "Click \"Sell honey\" when the jar is full, to continue harvesting", (Vector2) { 180, 570 }, 20, 0, WHITE);
+
     drawJar();
 }
 
@@ -1556,7 +1566,6 @@ static void harvestActiveChain(void) {
         HarvestHex *h = gs->hives[gs->activeHiveIndex]->hexes[(int)p->y][(int)p->x];
         FlowerType currentFlowerType = h->flowerType;
         if (currentFlowerType != lastFlowerType) {
-            // CHECK(Brian): Multiplier fine?
             multiplier += 0.2;
         }
         lastFlowerType = currentFlowerType;
