@@ -1330,7 +1330,7 @@ static int isInHive(Hive* h, int row, int column) {
 static FlowerType chooseFlower(Hive *h) {
     Vector2 hivePosition = h->position;
 
-    int total = 8;
+    int total = 7;
     int zinnias = 0;
     int dahlias = 0;
     int lavenders = 0;
