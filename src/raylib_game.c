@@ -299,7 +299,7 @@ int main(void)
 #if defined(WIN32)     
         hiveSprite = loadAnimation("../../../src/resources/hive.png", 3, 200);
         harvestBg = LoadTexture("../../../src/resources/harvest_bg.png");
-        menuBg = LoadTexture("../../../src/resources/start_button.png");
+        menuBg = LoadTexture("../../../src/resources/menu_bg.png");
         gardenBg = LoadTexture("../../../src/resources/garden_bg.png");
         shopBg = LoadTexture("../../../src/resources/shop_bg.png");
         aboutBg = LoadTexture("../../../src/resources/about_bg.png");
@@ -321,7 +321,7 @@ int main(void)
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
         backToMenuButton.texture = LoadTexture("../../../src/resources/back_to_menu_button.png");
         sellHoneyButton.texture = LoadTexture("../../../src/resources/sell_honey_button.png");
-        backToGarden.texture = LoadTexture("../../../src/resources/back_to_garden.png");
+        backToGardenButton.texture = LoadTexture("../../../src/resources/back_to_garden.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -1233,10 +1233,10 @@ static int isTileNeighbor(Vector2 t1, Vector2 t2) {
 
     int isEven = (int)(t1.y) % 2 == 0;
     if (isEven) {
-        if (abs(t1.y - t2.y) > 1) return false;
+        if (fabsf(t1.y - t2.y) > 1) return false;
         return t1.x - 1 == t2.x || t1.x == t2.x;
     } else {
-        if (abs(t1.y - t2.y) > 1) return false;
+        if (fabsf(t1.y - t2.y) > 1) return false;
         return t1.x == t2.x || t1.x + 1 == t2.x;
     }
 
