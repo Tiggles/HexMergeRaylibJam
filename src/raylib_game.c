@@ -1549,13 +1549,13 @@ static int flowerTypeToMoney(FlowerType t) {
 
 static void harvestActiveChain(void) {
     int money = 0;
-    float multiplier = 1.0;
+    float multiplier = 0.8;
     FlowerType lastFlowerType = FLOWER_EMPTY;
     for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
         Vector2 *p = &harvestChain[i];
         HarvestHex *h = gs->hives[gs->activeHiveIndex]->hexes[(int)p->y][(int)p->x];
         FlowerType currentFlowerType = h->flowerType;
-        if (currentFlowerType == lastFlowerType) {
+        if (currentFlowerType != lastFlowerType) {
             // CHECK(Brian): Multiplier fine?
             multiplier += 0.2;
         }
