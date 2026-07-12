@@ -286,6 +286,7 @@ int main(void)
     gs->hives = malloc(sizeof(Hive*) * 16);
     gs->numHives = 0;
     gs->hives[0] = initHive(2, 5);
+    gs->numHives++;
 
     gs->flowers = malloc(sizeof(Flower*) * 200);
     gs->numFlowers = 0;
@@ -1207,7 +1208,6 @@ static Hive* initHive(unsigned int x, unsigned int y) {
 
     h->position = (Vector2){x, y};
     h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
-    gs->numHives++;
     return h;
 }
 
