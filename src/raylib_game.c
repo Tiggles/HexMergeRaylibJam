@@ -80,6 +80,7 @@ typedef enum {
 } KeeperDirection;
 
 typedef enum {
+    FLOWER_EMPTY = -2,
     FLOWER_NONE = -1,
     FLOWER_ZINNIAS = 0,
     FLOWER_DAHLIAS = 1,
@@ -1139,7 +1140,7 @@ void UpdateDrawFrame(void)
                 int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
                 for (int r = 0; r < rowCount; r++) {
                     HarvestHex* hh = h->hexes[c][r];
-                    if (hh->flowerType != FLOWER_NONE) {
+                    if (hh->flowerType != FLOWER_EMPTY) {
                         if (hh->timeUntilReadyMS > 0) {
                             hh->timeUntilReadyMS -= delta;
                         }
@@ -1269,7 +1270,7 @@ static Hive* initHive(unsigned int x, unsigned int y) {
 
 static HarvestHex *initHarvestHex() {
     HarvestHex *h = malloc(sizeof(HarvestHex));
-    h->flowerType = FLOWER_NONE;
+    h->flowerType = FLOWER_EMPTY;
     h->timeUntilReadyMS = -1;
     return h;
 }
@@ -1377,7 +1378,7 @@ static void assignHexTile(Hive *h) {
             int c = GetRandomValue(0, COLUMN_COUNT - 1);
             int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
             int r = GetRandomValue(0, rowCount - 1);
-            if (h->hexes[c][r]->flowerType != FLOWER_NONE) continue;
+            if (h->hexes[c][r]->flowerType != FLOWER_EMPTY) continue;
             h->hexes[c][r]->flowerType = chooseFlower(h);
             h->hexes[c][r]->timeUntilReadyMS = DEFAULT_TIME_UNTIL_READY;
             return;   
@@ -1400,7 +1401,7 @@ static void drawHarvestScene(void) {
         int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
         for (int r = 0; r < rowCount; r++) {
             HarvestHex *hh = h->hexes[c][r];
-            if (hh->flowerType != FLOWER_NONE) {
+            if (hh->flowerType != FLOWER_EMPTY) {
                 Vector2 pos = hexDrawingCoordinates((Vector2){.x = r, .y = c});
                 Color color = WHITE;
                 if (hh->timeUntilReadyMS > 0) {
@@ -1408,8 +1409,10 @@ static void drawHarvestScene(void) {
                 }
                 Texture2D *t = &hexRed;
                 switch (hh->flowerType) {
-                    case FLOWER_NONE:
+                    case FLOWER_NONE: {
                         t = &hexYellow;
+                        break;
+                    }
                     case FLOWER_ZINNIAS: {
                         t = &hexRed;
                         break;
@@ -1478,7 +1481,7 @@ static void updateHarvestScene() {
         Vector2 point = mouseToHexPointCoordinates();
         if (point.x == -1 && point.y == -1) return;
         HarvestHex *hex = h->hexes[(int)point.y][(int)point.x];
-        if (hex->flowerType == FLOWER_NONE || hex->timeUntilReadyMS > 0) return;
+        if (hex->flowerType == FLOWER_EMPTY || hex->timeUntilReadyMS > 0) return;
         // Check for existing harvest-chain selection to disallow duplicates
         int duplicate = false;
         int firstFreeIdx = -1;
@@ -1533,13 +1536,15 @@ static int flowerTypeToMoney(FlowerType t) {
             return 50;
         case FLOWER_NONE:
             return 0;
+        case FLOWER_EMPTY:
+            return 0;
     }
 }
 
 static void harvestActiveChain(void) {
     int money = 0;
     float multiplier = 1.0;
-    FlowerType lastFlowerType = FLOWER_NONE;
+    FlowerType lastFlowerType = FLOWER_EMPTY;
     for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
         Vector2 *p = &harvestChain[i];
         HarvestHex *h = gs->hives[gs->activeHiveIndex]->hexes[(int)p->y][(int)p->x];
