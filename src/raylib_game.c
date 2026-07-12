@@ -119,6 +119,12 @@ typedef struct Hive {
     float nextHexStartFill;
 } Hive;
 
+
+typedef struct Jar {
+    int value;
+    int iteration;
+} Jar;
+
 struct GameState {
     enum CurrentScene currentScene;
     Vector2 playerPosition;
@@ -127,6 +133,8 @@ struct GameState {
     bool playerNearShop;
     Hive **hives;
     Flower **flowers;
+    Jar jar;
+    Jar ghostJar;
     int numHives;
     int activeHiveIndex;
     int nearestHive;
@@ -135,6 +143,7 @@ struct GameState {
     BuildType currentlyBuilding;
 } GameState;
 
+#define JAR_ITERATIONS 11
 #define COLUMN_COUNT 14
 #define ROW_COUNT_EVEN 15
 #define ROW_COUNT_UNEVEN 14
@@ -144,6 +153,8 @@ struct GameState {
 #define UNEVEN_ROW_X_OFFSET 23
 #define NEXT_FILL_TIME_IN_SECONDS 4
 #define DEFAULT_TIME_UNTIL_READY 2
+// CHECK(Brian): Kan hæves her for at lade kæden være større. Vi kunne også sige man kunne committe ved 3 og op efter?
+#define HARVEST_CHAIN_COUNT 3
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
@@ -174,17 +185,19 @@ static Texture2D lavenderSprite;
 static Texture2D sunflowerSprite;
 static Animation keeperSprites[7];
 static Animation keyZ;
+static Animation honeyGlassSprites;
 static Texture2D coin;
 static Texture2D hexOutline;
 static Texture2D hexBlue;
 static Texture2D hexPink;
 static Texture2D hexRed;
 static Texture2D hexYellow;
-static Texture2D honeyGlass;
 static Camera2D gardenCamera;
 static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
 };
+
+static Vector2 harvestChain[HARVEST_CHAIN_COUNT];
 
 static Button startButton;
 static Button menuButton;
@@ -221,6 +234,9 @@ static Vector2 hexDrawingCoordinates(Vector2 pos);
 static void drawHarvestScene(void);
 static void drawButton(Button* button);
 static void updateHarvestScene(void);
+static void clearHarvestChain(void);
+static void drawJar(void);
+static void harvestActiveChain(void);
 
 
 //------------------------------------------------------------------------------------
@@ -236,6 +252,16 @@ int main(void)
     //--------------------------------------------------------------------------------------
     InitWindow(screenWidth, screenHeight, "Best Bee-uddies");
 
+    // Check(Brian): Fjerner muligheden for at lukke spillet med Escape. Vil gerne bruge escape til at afbryde en kæde ved harvesting.
+    SetExitKey(KEY_NULL);
+
+    for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
+        harvestChain[i] = (Vector2){
+            .x = -1,
+            .y = -1,
+        };
+    }
+
     gs = malloc(sizeof(struct GameState));
     gs->currentScene = MENU;
     gs->playerPosition = (Vector2){ 100,100 };
@@ -244,9 +270,13 @@ int main(void)
     gs->playerNearShop = false;
     gs->money = STARTING_MONEY;
     gs->currentlyBuilding = BUILD_NULL;
-    // Hi! This should be -1, but for testing it's 0!
-    gs->activeHiveIndex = 0;
+    gs->activeHiveIndex = -1;
     gs->nearestHive = 0;
+
+    gs->jar = (Jar){
+        .iteration = 0,
+        .value = 0,
+    };
 
     gs->hives = malloc(sizeof(Hive*) * 16);
     gs->numHives = 0;
@@ -279,7 +309,6 @@ int main(void)
         hexPink = LoadTexture("../../../src/resources/hex_pink.png");
         hexRed = LoadTexture("../../../src/resources/hex_red.png");
         hexYellow = LoadTexture("../../../src/resources/hex_yellow.png");
-        honeyGlass = LoadTexture("../../../src/resources/honey_glass.png");
         startButton.texture = LoadTexture("../../../src/resources/start_button.png");
         menuButton.texture = LoadTexture("../../../src/resources/menu_button.png");
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
@@ -292,6 +321,7 @@ int main(void)
         keeperSprites[WALK_UP] = loadAnimation("../../../src/resources/character_walk_up.png", 6, 100);
         keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 4, 200);
         keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 4, 200);
+        honeyGlassSprites = loadAnimation("../../../src/resources/honey_glass.png", 11, 0);
 #else
         hiveSprite = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
@@ -307,10 +337,9 @@ int main(void)
         sunflowerSprite = LoadTexture("resources/sunflowers.png");
         hexOutline = LoadTexture("resources/hex_outline.png");
         hexBlue = LoadTexture("resources/hex_blue.png");
-        hexPink = LoadTexture("resources/hex_pink.png");;
-        hexRed = LoadTexture("resources/hex_red.png");;
-        hexYellow = LoadTexture("resources/hex_yellow.png");;
-        honeyGlass = LoadTexture("resources/honey_glass.png");;
+        hexPink = LoadTexture("resources/hex_pink.png");
+        hexRed = LoadTexture("resources/hex_red.png");
+        hexYellow = LoadTexture("resources/hex_yellow.png");
         startButton.texture = LoadTexture("resources/start_button.png");
         menuButton.texture = LoadTexture("resources/menu_button.png");
         aboutButton.texture = LoadTexture("resources/about_button.png");
@@ -323,6 +352,7 @@ int main(void)
         keeperSprites[WALK_UP] = loadAnimation("resources/character_walk_up.png", 6, 100);
         keeperSprites[WALK_LEFT] = loadAnimation("resources/character_walk_left.png", 4, 200);
         keeperSprites[WALK_RIGHT] = loadAnimation("resources/character_walk_right.png", 4, 200);
+        honeyGlassSprites = loadAnimation("resources/honey_glass.png", 11, 0);
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
@@ -380,7 +410,7 @@ static void drawHex() {
     Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
     if (point.x == -1 || point.y == -1) return;
     Vector2 pos = hexDrawingCoordinates(point);
-    DrawTexture(hexOutline, pos.x, pos.y, WHITE);
+    DrawTexture(hexOutline, pos.x, pos.y, BLACK);
 }
 
 static Vector2 hexDrawingCoordinates(Vector2 pos) {
@@ -1010,6 +1040,7 @@ void UpdateDrawFrame(void)
         nextSceneChange -= GetFrameTime();
     }
 
+    // Handle next placement of hex-content
     if (gs->currentScene != ABOUT && gs->currentScene != MENU) {
         float delta = GetFrameTime();
         for (int i = 0; i < gs->numHives; i++) {
@@ -1020,9 +1051,23 @@ void UpdateDrawFrame(void)
                 assignHexTile(h);
                 h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
             }
+
+            for (int c = 0; c < COLUMN_COUNT; c++) {
+                int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
+                for (int r = 0; r < rowCount; r++) {
+                    HarvestHex* hh = h->hexes[c][r];
+                    if (hh->flowerType != FLOWER_NONE) {
+                        if (hh->timeUntilReadyMS > 0) {
+                            hh->timeUntilReadyMS -= delta;
+                        }
+                    }
+                }
+            }
         }
     }
-
+    
+    // Could also be done on leaving HARVEST scene.
+    if (gs->currentScene != HARVEST) clearHarvestChain();
 
     switch (gs->currentScene) {
         case GARDEN:
@@ -1156,8 +1201,21 @@ static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y) {
     return f;
 }
 
-static int isTileNeighbor(Vector2 currentTile, Vector2 newTile) {
-    // TODO(Jonas)
+static int isTileNeighbor(Vector2 t1, Vector2 t2) {
+
+    if (t1.y == t2.y) {
+        return t1.x - 1 == t2.x || t1.x + 1 == t2.x;
+    }
+
+    int isEven = (int)(t1.y) % 2 == 0;
+    if (isEven) {
+        if (abs(t1.y - t2.y) > 1) return false;
+        return t1.x - 1 == t2.x || t1.x == t2.x;
+    } else {
+        if (abs(t1.y - t2.y) > 1) return false;
+        return t1.x == t2.x || t1.x + 1 == t2.x;
+    }
+
     return false;
 }
 
@@ -1227,8 +1285,14 @@ static void drawHarvestScene(void) {
         drawHex();
     }
 
-    // Vector2 f = hexDrawingCoordinates((Vector2){.x = 5, .y = 5});
-    // DrawTexture(hexRed, f.x, f.y, WHITE);
+    for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
+        Vector2 v = harvestChain[i];
+        if (v.x == -1 && v.y == -1) break;
+        Vector2 pos = hexDrawingCoordinates(v);
+        DrawTexture(hexOutline, pos.x, pos.y, BLACK);
+    }
+
+    drawJar();
 }
 
 static void updateHarvestScene() {
@@ -1242,23 +1306,136 @@ static void updateHarvestScene() {
         printf("No activeHiveIndex set. Bailing from function.\n");
         return;
     }
-    Hive *h = gs->hives[gs->activeHiveIndex];
-    float delta = GetFrameTime();
-    for (int c = 0; c < COLUMN_COUNT; c++) {
-        int rowCount = c % 2 == 0 ? ROW_COUNT_EVEN : ROW_COUNT_UNEVEN;
-        for (int r = 0; r < rowCount; r++) {
-            HarvestHex *hh = h->hexes[c][r];
-            if (hh->flowerType != FLOWER_NONE) {
-                if (hh->timeUntilReadyMS > 0) {
-                    hh->timeUntilReadyMS -= delta;
-                }
-            }
-        } 
-    }
 
-    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+    Hive *h = gs->hives[gs->activeHiveIndex];
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         Vector2 point = mouseToHexPointCoordinates();
-        
-        //printf("%i\n", isTileNeighbor(point, (Vector2){.x = 5, .y = 5 }));
+        if (point.x == -1 && point.y == -1) return;
+        HarvestHex *hex = &h->hexes[(int)point.y][(int)point.x]->flowerType;
+        if (hex->flowerType == FLOWER_NONE || hex->timeUntilReadyMS > 0) return;
+        // Check for existing harvest-chain selection to disallow duplicates
+        int duplicate = false;
+        int firstFreeIdx = -1;
+
+        for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
+            Vector2 hex = harvestChain[i];
+            if (hex.x == -1 && hex.y == -1) {
+                firstFreeIdx = i;
+                break;
+            }
+
+            if (hex.x == point.x && hex.y == point.y) {
+                duplicate = true;
+                break;
+            }
+        }
+
+        if (!duplicate && firstFreeIdx != -1) {
+            if (firstFreeIdx < HARVEST_CHAIN_COUNT) {
+                if (firstFreeIdx != 0) {
+                    // Priorier entry
+                    Vector2 hex = harvestChain[firstFreeIdx - 1];
+                    if (!isTileNeighbor(hex, point)) {
+                        printf("Is not neighbor, so we bail");
+                        return;
+                    }
+                }
+                harvestChain[firstFreeIdx] = point;
+            }
+        }
+
+        if (firstFreeIdx == HARVEST_CHAIN_COUNT - 1) {
+            harvestActiveChain();
+            clearHarvestChain();
+        }
+    } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) || IsKeyDown(KEY_ESCAPE)) {
+        clearHarvestChain();
     }
 }
+
+// CHECK(Brian): Not sure about values here.
+static int flowerTypeToMoney(FlowerType t) {
+    switch (t) {
+        case FLOWER_ZINNIAS:
+            return 20;
+        case FLOWER_DAHLIAS:
+            return 30;
+        case FLOWER_LAVENDERS:
+            return 40;
+        case FLOWER_SUNFLOWERS:
+            return 50;
+        case FLOWER_NONE:
+            return 0;
+    }
+}
+
+static void harvestActiveChain(void) {
+    int money = 0;
+    float multiplier = 1.0;
+    FlowerType lastFlowerType = FLOWER_NONE;
+    for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
+        Vector2 *p = &harvestChain[i];
+        HarvestHex *h = gs->hives[gs->activeHiveIndex]->hexes[(int)p->y][(int)p->x];
+        FlowerType currentFlowerType = h->flowerType;
+        if (currentFlowerType == lastFlowerType) {
+            // CHECK(Brian): Multiplier fine?
+            multiplier += 0.2;
+        }
+        lastFlowerType = currentFlowerType;
+        money += flowerTypeToMoney(currentFlowerType) * multiplier;
+        
+        p->x = -1;
+        p->y = -1;
+        
+        h->flowerType = FLOWER_NONE;
+        h->timeUntilReadyMS = -1;
+    }
+    gs->jar.iteration += 1;
+    gs->jar.value += money;
+
+    if (gs->jar.iteration == JAR_ITERATIONS) {
+        gs->jar.iteration = 0;
+        gs->money += gs->jar.value;
+        gs->jar.value = 0;
+    }
+}
+
+static void clearHarvestChain() {
+    for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
+        Vector2 *hex = &harvestChain[i];
+        hex->x = -1;
+        hex->y = -1;
+    }
+}
+
+static void drawJar() {
+    float textureWidth = honeyGlassSprites.texture.width;
+    float spriteWidth = textureWidth / honeyGlassSprites.numFrames;
+    float spriteHeight = (float) honeyGlassSprites.texture.height;
+    Rectangle frameRec = {
+        spriteWidth * gs->jar.iteration,
+        0,
+        spriteWidth,
+        spriteHeight,
+    };
+
+    Rectangle destRec = {
+       0, 520, spriteWidth, spriteHeight
+    };
+
+    Vector2 origin = { 0, 0 };
+    DrawTexturePro(honeyGlassSprites.texture, frameRec, destRec, origin, 0, WHITE);
+
+    DrawText(TextFormat("Value: %i", gs->jar.value), 180, 650, 18, BLACK);
+}
+
+// TODOS!
+// - [X] Harvesting chain
+// - [X] Fill jars (?) and sell
+// - [ ] Leave HARVEST scene
+// - [ ] Flowers must affect hexes
+// - [ ] Music
+// - [ ] Sounds
+// - [ ] Fancy animation when honeyGlass is filled
+// - [ ] Lower row of harvesting grid has funky behaviour
