@@ -321,7 +321,8 @@ int main(void)
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
         backToMenuButton.texture = LoadTexture("../../../src/resources/back_to_menu_button.png");
         sellHoneyButton.texture = LoadTexture("../../../src/resources/sell_honey_button.png");
-        backToGardenButton.texture = LoadTexture("../../../src/resources/back_to_garden.png");
+        backToGardenButton.texture = LoadTexture("../../../src/resources/back_to_garden_button.png");
+
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("../../../src/resources/character_side.png", 2, 500);
@@ -714,35 +715,35 @@ void updateBuildScene(void) {
         Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
         switch (gs->currentlyBuilding) {
             case BUILD_HIVE: {
-                gs->hives[gs->numHives] = initHive(chosenHexCoord.x, chosenHexCoord.y);
+                gs->hives[gs->numHives++] = initHive(chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= HIVE_PRICE;
                 gs->currentScene = GARDEN;
         
                 break;
             }
             case BUILD_ZINNIAS: {
-                gs->flowers[gs->numFlowers] = initFlower(FLOWER_ZINNIAS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->flowers[gs->numFlowers++] = initFlower(FLOWER_ZINNIAS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= ZINNIAS_PRICE;
                 gs->currentScene = GARDEN;
         
                 break;
             }
             case BUILD_DAHLIAS: {
-                gs->flowers[gs->numFlowers] = initFlower(FLOWER_DAHLIAS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->flowers[gs->numFlowers++] = initFlower(FLOWER_DAHLIAS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= DAHLIAS_PRICE;
                 gs->currentScene = GARDEN;
         
                 break;
             }
             case BUILD_LAVENDERS: {
-                gs->flowers[gs->numFlowers] = initFlower(FLOWER_LAVENDERS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->flowers[gs->numFlowers++] = initFlower(FLOWER_LAVENDERS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= LAVENDERS_PRICE;
                 gs->currentScene = GARDEN;
         
                 break;
             }
             case BUILD_SUNFLOWERS: {
-                gs->flowers[gs->numFlowers] = initFlower(FLOWER_SUNFLOWERS, chosenHexCoord.x, chosenHexCoord.y);
+                gs->flowers[gs->numFlowers++] = initFlower(FLOWER_SUNFLOWERS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= SUNFLOWERS_PRICE;
                 gs->currentScene = GARDEN;
         
@@ -1218,10 +1219,9 @@ static HarvestHex *initHarvestHex() {
 }
 
 static Flower* initFlower(FlowerType type, unsigned int x, unsigned int y) {
-    Flower *f = malloc(sizeof(Flower));
+    Flower *f = (Flower*) malloc(sizeof(Flower));
     f->type = type;
     f->position = (Vector2){x, y};
-    gs->numFlowers++;
     return f;
 }
 
