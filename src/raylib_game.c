@@ -290,11 +290,6 @@ int main(void)
         .value = 0,
     };
 
-    gs->hives = malloc(sizeof(Hive*) * 16);
-    gs->numHives = 0;
-    gs->hives[0] = initHive(2, 5);
-    gs->numHives++;
-
     gs->flowers = malloc(sizeof(Flower*) * 200);
     gs->numFlowers = 0;
     
@@ -392,9 +387,12 @@ int main(void)
         thump = LoadSound("resources/sounds/431204__bunnyluvvid__rabbit-thump-on-soil-edited.wav");
 
 #endif
-    //static Texture2D harvestBg;
-    //static Texture2D keeperSprites[3];
     
+    gs->hives = malloc(sizeof(Hive*) * 16);
+    gs->numHives = 0;
+    gs->hives[0] = initHive(2, 5);
+    gs->numHives++;
+
     // Initialize buttons
     startButton.position = (Vector2){20, 600};
     startButton.isDisabled = false;
@@ -1329,7 +1327,7 @@ static int isInHive(Hive* h, int row, int column) {
 }
 
 static FlowerType chooseFlower(Hive *h) {
-    FlowerType t = FLOWER_SUNFLOWERS;
+    FlowerType t = FLOWER_NONE;
     Vector2 hivePosition = h->position;
     int column = GetRandomValue(-1 + h->position.y, 1 + h->position.y);
     if (column < 0) column = 0;
@@ -1410,6 +1408,7 @@ static void drawHarvestScene(void) {
                 switch (hh->flowerType) {
                     case FLOWER_NONE:
                         t = &hexYellow;
+                        break;
                     case FLOWER_ZINNIAS: {
                         t = &hexRed;
                         break;
@@ -1520,7 +1519,6 @@ static void updateHarvestScene() {
     }
 }
 
-// CHECK(Brian): Not sure about values here.
 static int flowerTypeToMoney(FlowerType t) {
     switch (t) {
         case FLOWER_ZINNIAS:
@@ -1532,7 +1530,7 @@ static int flowerTypeToMoney(FlowerType t) {
         case FLOWER_SUNFLOWERS:
             return 50;
         case FLOWER_NONE:
-            return 0;
+            return 10;
     }
 }
 
