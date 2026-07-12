@@ -663,52 +663,41 @@ void drawFlowers(void) {
 void drawShopScene(void) {
     // Draw background
     DrawTexture(shopBg, 0, 0, WHITE);
-    char priceString[10];
 
     // Draw prices
     DrawTexture(coin, 500, 170, WHITE);
     if (gs->money >= HIVE_PRICE) {
-        sprintf(priceString, "%d", HIVE_PRICE);
-        DrawText(priceString, 520, 170, 20, BLACK);
+        DrawTextEx(font30, TextFormat("%i", HIVE_PRICE), (Vector2){520, 163}, 30, 0, BLACK);
     } else {
-        sprintf(priceString, "%d", HIVE_PRICE);
-        DrawText(priceString, 520, 170, 20, RED);
+        DrawTextEx(font30, TextFormat("%i", HIVE_PRICE), (Vector2){520, 163}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 289, WHITE);
     if(gs->money >= ZINNIAS_PRICE) {
-        sprintf(priceString, "%d", ZINNIAS_PRICE);
-        DrawText(priceString, 520, 289, 20, BLACK);
+        DrawTextEx(font30, TextFormat("%i", ZINNIAS_PRICE), (Vector2){520, 282}, 30, 0, BLACK);
     } else {
-        sprintf(priceString, "%d", ZINNIAS_PRICE);
-        DrawText(priceString, 520, 289, 20, RED);
+        DrawTextEx(font30, TextFormat("%i", ZINNIAS_PRICE), (Vector2){520, 282}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 408, WHITE);
     if(gs->money >= DAHLIAS_PRICE) {
-        sprintf(priceString, "%d", DAHLIAS_PRICE);
-        DrawText(priceString, 520, 408, 20, BLACK);
+        DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30, 0, BLACK);
     } else {
-        sprintf(priceString, "%d", DAHLIAS_PRICE);
-        DrawText(priceString, 520, 408, 20, RED);
+        DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 527, WHITE);
     if(gs->money >= LAVENDERS_PRICE) {
-        sprintf(priceString, "%d", LAVENDERS_PRICE);
-        DrawText(priceString, 520, 527, 20, BLACK);
+        DrawTextEx(font30, TextFormat("%i", LAVENDERS_PRICE), (Vector2){520, 520}, 30, 0, BLACK);
     } else {
-        sprintf(priceString, "%d", LAVENDERS_PRICE);
-        DrawText(priceString, 520, 527, 20, RED);
+        DrawTextEx(font30, TextFormat("%i", LAVENDERS_PRICE), (Vector2){520, 520}, 30, 0, RED);
     }
 
     DrawTexture(coin, 500, 646, WHITE);
     if(gs->money >= SUNFLOWERS_PRICE) {
-        sprintf(priceString, "%d", SUNFLOWERS_PRICE);
-        DrawText(priceString, 520, 646, 20, BLACK);
+        DrawTextEx(font30, TextFormat("%i", SUNFLOWERS_PRICE), (Vector2){520, 639}, 30, 0, BLACK);
     } else {
-        sprintf(priceString, "%d", SUNFLOWERS_PRICE);
-        DrawText(priceString, 520, 646, 20, RED);
+        DrawTextEx(font30, TextFormat("%i", SUNFLOWERS_PRICE), (Vector2){520, 639}, 30, 0, RED);
     }
 }
 
