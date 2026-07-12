@@ -173,7 +173,7 @@ static const int ZINNIAS_PRICE = 500;
 static const int DAHLIAS_PRICE = 1000;
 static const int LAVENDERS_PRICE = 2000;
 static const int SUNFLOWERS_PRICE = 5000;
-static const int STARTING_MONEY = 100000;
+static const int STARTING_MONEY = 5000;
 
 static Texture2D hiveSprite;
 static Texture2D harvestBg;
@@ -197,6 +197,7 @@ static Texture2D hexPink;
 static Texture2D hexRed;
 static Texture2D hexYellow;
 static Camera2D gardenCamera;
+static Texture2D purchaseButtonSprite;
 static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
 };
@@ -210,9 +211,11 @@ static Button startButton;
 static Button menuButton;
 static Button aboutButton;
 static Button backToMenuButton;
-static Button backToGardenButton;
+static Button exitHarvestButton;
 static Button sellHoneyButton;
 static Button cancelPurchaseButton;
+static Button exitShopButton;
+static Button purchaseButtons[5];
 
 static Font font20;
 static Font font30;
@@ -245,6 +248,7 @@ static Vector2 mouseToHexPointCoordinates();
 static FlowerType chooseFlower(Hive *h);
 static Vector2 hexDrawingCoordinates(Vector2 pos);
 static void drawHarvestScene(void);
+static Button initButton(Texture2D texture, Vector2 position);
 static void updateButton(Button* button);
 static void drawButton(Button* button);
 static void updateHarvestScene(void);
@@ -281,7 +285,7 @@ int main(void)
 
     gs = malloc(sizeof(struct GameState));
     gs->currentScene = MENU;
-    gs->playerPosition = (Vector2){ 100,100 };
+    gs->playerPosition = (Vector2){ 490,120 };
     gs->playerDirection = DOWN;
     gs->playerMoving = false;
     gs->playerNearShop = false;
@@ -329,8 +333,10 @@ int main(void)
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
         backToMenuButton.texture = LoadTexture("../../../src/resources/back_to_menu_button.png");
         sellHoneyButton.texture = LoadTexture("../../../src/resources/sell_honey_button.png");
-        backToGardenButton.texture = LoadTexture("../../../src/resources/back_to_garden_button.png");
+        exitHarvestButton.texture = LoadTexture("../../../src/resources/back_to_garden_button.png");
         cancelPurchaseButton.texture = LoadTexture("../../../src/resources/cancel_purchase_button.png");
+        purchaseButtonSprite = LoadTexture("../../../src/resources/purchase_button.png");
+        exitShopButton.texture = LoadTexture("../../../src/resources/back_to_garden_button.png");
 
         keeperSprites[BACK] = initAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = initAnimation("../../../src/resources/character_front.png", 2, 500);
@@ -373,9 +379,11 @@ int main(void)
         menuButton.texture = LoadTexture("resources/menu_button.png");
         aboutButton.texture = LoadTexture("resources/about_button.png");
         backToMenuButton.texture = LoadTexture("resources/back_to_menu_button.png");
-        backToGardenButton.texture = LoadTexture("resources/back_to_garden_button.png");
+        exitHarvestButton.texture = LoadTexture("resources/back_to_garden_button.png");
+        exitShopButton.texture = LoadTexture("resources/back_to_garden_button.png");
         sellHoneyButton.texture = LoadTexture("resources/sell_honey_button.png");
         cancelPurchaseButton.texture = LoadTexture("resources/cancel_purchase_button.png");
+        purchaseButtonSprite = LoadTexture("resources/purchase_button.png");
         keeperSprites[BACK] = initAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = initAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = initAnimation("resources/character_side.png", 2, 500);
@@ -397,7 +405,7 @@ int main(void)
     
     gs->hives = malloc(sizeof(Hive*) * 16);
     gs->numHives = 0;
-    gs->hives[0] = initHive(2, 5);
+    gs->hives[0] = initHive(9, 2);
     gs->numHives++;
 
     // Initialize buttons
@@ -409,12 +417,21 @@ int main(void)
     aboutButton.isDisabled = false;
     backToMenuButton.position = (Vector2){549, 26};
     backToMenuButton.isDisabled = false;
-    backToGardenButton.position = (Vector2){570, 640};
-    backToGardenButton.isDisabled = false;
-    cancelPurchaseButton.position = (Vector2){10, 50};
+    exitHarvestButton.position = (Vector2){570, 640};
+    exitHarvestButton.isDisabled = false;
+    cancelPurchaseButton.position = (Vector2){10, 57};
     cancelPurchaseButton.isDisabled = false;
     sellHoneyButton.position = (Vector2){570, 602};
     sellHoneyButton.isDisabled = false;
+    exitShopButton.position = (Vector2){567, 27};
+    exitShopButton.isDisabled = false;
+
+    purchaseButtons[0] = initButton(purchaseButtonSprite, (Vector2){604, 160});
+    purchaseButtons[1] = initButton(purchaseButtonSprite, (Vector2){604, 279});
+    purchaseButtons[2] = initButton(purchaseButtonSprite, (Vector2){604, 398});
+    purchaseButtons[3] = initButton(purchaseButtonSprite, (Vector2){604, 517});
+    purchaseButtons[4] = initButton(purchaseButtonSprite, (Vector2){604, 636});
+    printf("%d", purchaseButtons[0].texture.height);
 
     PlayMusicStream(music);
     SetMusicPan(music, 0.0);
@@ -712,6 +729,12 @@ void drawShopScene(void) {
     } else {
         DrawTextEx(font30, TextFormat("%i", SUNFLOWERS_PRICE), (Vector2){520, 639}, 30, 0, RED);
     }
+
+    // Draw buttons
+    for (unsigned int i = 0; i < 5; i++) {
+        drawButton(&purchaseButtons[i]);
+    }
+    drawButton(&exitShopButton);
 }
 
 void drawBuildScene(void) {
@@ -900,63 +923,39 @@ void drawGardenScene(void) {
 
 void updateShopScene(void) {
     SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-    Vector2 cursor = GetMousePosition(); 
     
-    Rectangle exitButtonRec = {584, 27, 103, 34};
-    Rectangle purchaseButtons[5];
-    purchaseButtons[0] = (Rectangle){605, 161, 82, 34};
-    purchaseButtons[1] = (Rectangle){605, 280, 82, 34};
-    purchaseButtons[2] = (Rectangle){605, 399, 82, 34};
-    purchaseButtons[3] = (Rectangle){605, 518, 82, 34};
-    purchaseButtons[4] = (Rectangle){605, 637, 82, 34};
+    // Update buttons
+    for (unsigned int i = 0; i < 5; i++) {
+        updateButton(&purchaseButtons[i]);
+    }
+    updateButton(&exitShopButton);
 
-
-    if (CheckCollisionPointRec(cursor, exitButtonRec)) {
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-
-        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            gs->currentScene = GARDEN;
-            return;
-        }
+    if (exitShopButton.isClicked) {
+        gs->currentScene = GARDEN;
+        return;
     }
 
-    for (unsigned int i = 0; i < 5; i++) {
-        if (CheckCollisionPointRec(cursor, purchaseButtons[i])) {
-            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    purchaseButtons[0].isDisabled = gs->money < HIVE_PRICE;
+    purchaseButtons[1].isDisabled = gs->money < ZINNIAS_PRICE;
+    purchaseButtons[2].isDisabled = gs->money < DAHLIAS_PRICE;
+    purchaseButtons[3].isDisabled = gs->money < LAVENDERS_PRICE;
+    purchaseButtons[4].isDisabled = gs->money < SUNFLOWERS_PRICE;
 
-            if (i == 0 && gs->money < HIVE_PRICE) {
-                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
-            } else if (i == 1 && gs->money < ZINNIAS_PRICE) {
-                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
-            } else if (i == 2 && gs->money < DAHLIAS_PRICE) {
-                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
-            } else if (i == 3 && gs->money < LAVENDERS_PRICE) {
-                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
-            } else if (i == 4 && gs->money < SUNFLOWERS_PRICE) {
-                SetMouseCursor(MOUSE_CURSOR_NOT_ALLOWED);
-            }
-        
-
-            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                if (i == 0 && gs->money >= HIVE_PRICE) {
-                    gs->currentScene = BUILD;
-                    gs->currentlyBuilding = BUILD_HIVE;
-                } else if (i == 1 && gs->money >= ZINNIAS_PRICE) {
-                    gs->currentScene = BUILD;
-                    gs->currentlyBuilding = BUILD_ZINNIAS;
-                } else if (i == 2 && gs->money >= DAHLIAS_PRICE) {
-                    gs->currentScene = BUILD;
-                    gs->currentlyBuilding = BUILD_DAHLIAS;
-                } else if (i == 3 && gs->money >= LAVENDERS_PRICE) {
-                    gs->currentScene = BUILD;
-                    gs->currentlyBuilding = BUILD_LAVENDERS;
-                } else if (i == 4 && gs->money >= SUNFLOWERS_PRICE) {
-                    gs->currentScene = BUILD;
-                    gs->currentlyBuilding = BUILD_SUNFLOWERS;
-                }
-                break;
-            }
-        }
+    if (purchaseButtons[0].isClicked && gs->money >= HIVE_PRICE) {
+        gs->currentScene = BUILD;
+        gs->currentlyBuilding = BUILD_HIVE;
+    } else if (purchaseButtons[1].isClicked && gs->money >= ZINNIAS_PRICE) {
+        gs->currentScene = BUILD;
+        gs->currentlyBuilding = BUILD_ZINNIAS;
+    } else if (purchaseButtons[2].isClicked && gs->money >= DAHLIAS_PRICE) {
+        gs->currentScene = BUILD;
+        gs->currentlyBuilding = BUILD_DAHLIAS;
+    } else if (purchaseButtons[3].isClicked && gs->money >= LAVENDERS_PRICE) {
+        gs->currentScene = BUILD;
+        gs->currentlyBuilding = BUILD_LAVENDERS;
+    } else if (purchaseButtons[4].isClicked && gs->money >= SUNFLOWERS_PRICE) {
+        gs->currentScene = BUILD;
+        gs->currentlyBuilding = BUILD_SUNFLOWERS;
     }
 }
 
@@ -1056,6 +1055,18 @@ void drawHud(void) {
     Vector2 stringSize = MeasureTextEx(font30, moneyString, 30, 0);
     DrawTexture(coin, 670-stringSize.x, 690, WHITE); 
     DrawTextEx(font30, moneyString, (Vector2){690-stringSize.x, 683}, 30, 0, WHITE);
+}
+
+static Button initButton(Texture2D texture, Vector2 position) {
+    Button b;
+
+    b.isClicked = false;
+    b.isDisabled = false;
+    b.isHovered = false;
+    b.texture = texture;
+    b.position = position;
+
+    return b;
 }
 
 static void updateButton(Button* button) {
@@ -1417,6 +1428,7 @@ static FlowerType chooseFlower(Hive *h) {
                 case FLOWER_SUNFLOWERS:
                     sunflowers += 1;
                     break;
+                default: {}
             }
         }
     }
@@ -1463,7 +1475,7 @@ static void drawHarvestScene(void) {
     }
     DrawTexture(harvestBg, 0, 0, WHITE);
     drawButton(&sellHoneyButton);
-    drawButton(&backToGardenButton);
+    drawButton(&exitHarvestButton);
     
     Hive *h = gs->hives[gs->activeHiveIndex];
     for (int c = 0; c < COLUMN_COUNT; c++) {
@@ -1498,6 +1510,7 @@ static void drawHarvestScene(void) {
                         t = &hexOrange;
                         break;
                     }
+                    default: {}
                 }
                 DrawTexture(*t, pos.x, pos.y, color);
             }
@@ -1525,7 +1538,7 @@ static void drawHarvestScene(void) {
 static void updateHarvestScene() {
     updateButton(&sellHoneyButton);
     sellHoneyButton.isDisabled = gs->jar.iteration != JAR_ITERATIONS - 1;
-    updateButton(&backToGardenButton);
+    updateButton(&exitHarvestButton);
 
     if (!sellHoneyButton.isDisabled && sellHoneyButton.isClicked) {
         gs->jar.iteration = 0;
@@ -1534,7 +1547,7 @@ static void updateHarvestScene() {
         PlaySound(sellHoney);
     }
 
-    if (backToGardenButton.isClicked) {
+    if (exitHarvestButton.isClicked) {
         clearHarvestChain();
         gs->currentScene = GARDEN;
     }
@@ -1578,7 +1591,6 @@ static void updateHarvestScene() {
             if (firstFreeIdx < HARVEST_CHAIN_COUNT) {
                 if (firstFreeIdx != 0) {
                     // Priorier entry
-                    Vector2 hex = harvestChain[firstFreeIdx - 1];
                     if (!isNeighbor) {
                         return;
                     }
