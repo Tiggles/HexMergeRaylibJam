@@ -151,7 +151,7 @@ struct GameState {
 #define INITIAL_OFFSET_Y 12
 #define MOD_OFFSET_X  4
 #define UNEVEN_ROW_X_OFFSET 23
-#define NEXT_FILL_TIME_IN_SECONDS 1
+#define NEXT_FILL_TIME_IN_SECONDS 4
 #define DEFAULT_TIME_UNTIL_READY 2
 // CHECK(Brian): Kan hæves her for at lade kæden være større. Vi kunne også sige man kunne committe ved 3 og op efter?
 #define HARVEST_CHAIN_COUNT 3
