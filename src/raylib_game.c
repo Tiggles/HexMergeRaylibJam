@@ -119,7 +119,6 @@ typedef struct Hive {
     float nextHexStartFill;
 } Hive;
 
-
 typedef struct Jar {
     int value;
     int iteration;
@@ -170,7 +169,7 @@ static const int ZINNIAS_PRICE = 500;
 static const int DAHLIAS_PRICE = 1000;
 static const int LAVENDERS_PRICE = 2000;
 static const int SUNFLOWERS_PRICE = 5000;
-static const int STARTING_MONEY = 1000;
+static const int STARTING_MONEY = 100000;
 
 static float nextSceneChange = 0.0;
 static Animation hiveSprite;
@@ -188,7 +187,9 @@ static Animation keyZ;
 static Animation honeyGlassSprites;
 static Texture2D coin;
 static Texture2D hexOutline;
-static Texture2D hexBlue;
+static Texture2D hexOutlineLight;
+static Texture2D hexOrange;
+static Texture2D hexPurple;
 static Texture2D hexPink;
 static Texture2D hexRed;
 static Texture2D hexYellow;
@@ -204,6 +205,10 @@ static Button menuButton;
 static Button aboutButton;
 static Button backToMenuButton;
 static Button backToGardenButton;
+static Button sellHoneyButton;
+
+static Font font20;
+static Font font30;
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
@@ -305,7 +310,9 @@ int main(void)
         lavenderSprite = LoadTexture("../../../src/resources/lavender.png");
         sunflowerSprite = LoadTexture("../../../src/resources/sunflowers.png");
         hexOutline = LoadTexture("../../../src/resources/hex_outline.png");
-        hexBlue = LoadTexture("../../../src/resources/hex_blue.png");
+        hexOutlineLight = LoadTexture("../../../src/resources/hex_outline_light.png");
+        hexOrange = LoadTexture("../../../src/resources/hex_orange.png");
+        hexPurple = LoadTexture("../../../src/resources/hex_purple.png");
         hexPink = LoadTexture("../../../src/resources/hex_pink.png");
         hexRed = LoadTexture("../../../src/resources/hex_red.png");
         hexYellow = LoadTexture("../../../src/resources/hex_yellow.png");
@@ -313,6 +320,7 @@ int main(void)
         menuButton.texture = LoadTexture("../../../src/resources/menu_button.png");
         aboutButton.texture = LoadTexture("../../../src/resources/about_button.png");
         backToMenuButton.texture = LoadTexture("../../../src/resources/back_to_menu_button.png");
+        sellHoneyButton.texture = LoadTexture("../../../src/resources/sell_honey_button.png");
         backToGarden.texture = LoadTexture("../../../src/resources/back_to_garden.png");
         keeperSprites[BACK] = loadAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("../../../src/resources/character_front.png", 2, 500);
@@ -322,6 +330,8 @@ int main(void)
         keeperSprites[WALK_LEFT] = loadAnimation("../../../src/resources/character_walk_left.png", 4, 200);
         keeperSprites[WALK_RIGHT] = loadAnimation("../../../src/resources/character_walk_right.png", 4, 200);
         honeyGlassSprites = loadAnimation("../../../src/resources/honey_glass.png", 11, 0);
+        font20 = LoadFontEx("../../../src/resources/fonts/Jersey_10/Jersey10-Regular.ttf", 20, 0, 250);
+        font30 = LoadFontEx("../../../src/resources/fonts/Jersey_10/Jersey10-Regular.ttf", 30, 0, 250);
 #else
         hiveSprite = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
@@ -335,8 +345,10 @@ int main(void)
         dahliasSprite = LoadTexture("resources/dahlias.png");
         lavenderSprite = LoadTexture("resources/lavender.png");
         sunflowerSprite = LoadTexture("resources/sunflowers.png");
-        hexOutline = LoadTexture("resources/hex_outline.png");
-        hexBlue = LoadTexture("resources/hex_blue.png");
+        hexOutline= LoadTexture("resources/hex_outline.png");
+        hexOutlineLight = LoadTexture("resources/hex_outline_light.png");
+        hexOrange = LoadTexture("resources/hex_orange.png");
+        hexPurple = LoadTexture("resources/hex_purple.png");
         hexPink = LoadTexture("resources/hex_pink.png");
         hexRed = LoadTexture("resources/hex_red.png");
         hexYellow = LoadTexture("resources/hex_yellow.png");
@@ -345,6 +357,7 @@ int main(void)
         aboutButton.texture = LoadTexture("resources/about_button.png");
         backToMenuButton.texture = LoadTexture("resources/back_to_menu_button.png");
         backToGardenButton.texture = LoadTexture("resources/back_to_garden_button.png");
+        sellHoneyButton.texture = LoadTexture("resources/sell_honey_button.png");
         keeperSprites[BACK] = loadAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = loadAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = loadAnimation("resources/character_side.png", 2, 500);
@@ -353,6 +366,8 @@ int main(void)
         keeperSprites[WALK_LEFT] = loadAnimation("resources/character_walk_left.png", 4, 200);
         keeperSprites[WALK_RIGHT] = loadAnimation("resources/character_walk_right.png", 4, 200);
         honeyGlassSprites = loadAnimation("resources/honey_glass.png", 11, 0);
+        font20 = LoadFontEx("resources/fonts/Jersey_10/Jersey10-Regular.ttf", 20, 0, 250);
+        font30 = LoadFontEx("resources/fonts/Jersey_10/Jersey10-Regular.ttf", 30, 0, 250);
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
@@ -363,6 +378,8 @@ int main(void)
     aboutButton.position = (Vector2){122, 600};
     backToMenuButton.position = (Vector2){549, 26};
     backToGardenButton.position = (Vector2){570, 640};
+    sellHoneyButton.position = (Vector2){570, 602};
+
 
     // TODO: Load resources / Initialize variables at this point
 
@@ -389,6 +406,8 @@ int main(void)
 
     // TODO: Unload all loaded resources at this point
     unloadAnimation(&hiveSprite);
+    UnloadFont(font20);
+    UnloadFont(font30);
 
     CloseWindow();        // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
@@ -410,7 +429,7 @@ static void drawHex() {
     Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
     if (point.x == -1 || point.y == -1) return;
     Vector2 pos = hexDrawingCoordinates(point);
-    DrawTexture(hexOutline, pos.x, pos.y, BLACK);
+    DrawTexture(hexOutlineLight, pos.x, pos.y, WHITE);
 }
 
 static Vector2 hexDrawingCoordinates(Vector2 pos) {
@@ -940,12 +959,10 @@ void drawHud(void) {
         return;
     }
 
-    char moneyString[10];
-    sprintf(moneyString, "%d", gs->money);
-
-    int stringSize = MeasureText(moneyString, 20);
-    DrawTexture(coin, 670-stringSize, 690, WHITE); 
-    DrawText(moneyString, 690-stringSize, 689, 20, WHITE);
+    const char* moneyString = TextFormat("%i", gs->money);
+    Vector2 stringSize = MeasureTextEx(font30, moneyString, 30, 0);
+    DrawTexture(coin, 670-stringSize.x, 690, WHITE); 
+    DrawTextEx(font30, moneyString, (Vector2){690-stringSize.x, 683}, 30, 0, WHITE);
 }
 
 static void updateButton(Button* button) {
@@ -1009,6 +1026,13 @@ void updateMenu(void) {
 void drawAbout(void) {
     // Draw background 
     DrawTexture(aboutBg, 0, 0, WHITE);
+
+    DrawTextEx(font20, "Best Bee-uddies is a small game about producing and harvesting honey.", (Vector2){50, 104}, 20, 0, BLACK);
+    DrawTextEx(font20, "The game was made in one week in July 2026 for the Raylib GameJam 6.x.", (Vector2){50, 134}, 20, 0, BLACK);
+    DrawTextEx(font20, "The theme was HEX + MERGE.", (Vector2){50, 164}, 20, 0, BLACK);
+    DrawTextEx(font20, "Brian Ravn (xiroV): Design, Programming, Artwork", (Vector2){50, 214}, 20, 0, BLACK);
+    DrawTextEx(font20, "Jonas Hinchely (Tiggles): Programming", (Vector2){50, 244}, 20, 0, BLACK);
+    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 294}, 20, 0, BLACK);
 
     // Draw buttons
     drawButton(&backToMenuButton);
@@ -1243,6 +1267,7 @@ static void drawHarvestScene(void) {
         return;
     }
     DrawTexture(harvestBg, 0, 0, WHITE);
+    drawButton(&sellHoneyButton);
     drawButton(&backToGardenButton);
     
     Hive *h = gs->hives[gs->activeHiveIndex];
@@ -1259,20 +1284,21 @@ static void drawHarvestScene(void) {
                 Texture2D *t = &hexRed;
                 switch (hh->flowerType) {
                     case FLOWER_NONE:
+                        t = &hexYellow;
                     case FLOWER_ZINNIAS: {
                         t = &hexRed;
                         break;
                     }
                     case FLOWER_DAHLIAS: {
-                        t = &hexBlue;
-                        break;
-                    }
-                    case FLOWER_LAVENDERS: {
                         t = &hexPink;
                         break;
                     }
+                    case FLOWER_LAVENDERS: {
+                        t = &hexPurple;
+                        break;
+                    }
                     case FLOWER_SUNFLOWERS: {
-                        t = &hexYellow;
+                        t = &hexOrange;
                         break;
                     }
                 }
@@ -1289,14 +1315,19 @@ static void drawHarvestScene(void) {
         Vector2 v = harvestChain[i];
         if (v.x == -1 && v.y == -1) break;
         Vector2 pos = hexDrawingCoordinates(v);
-        DrawTexture(hexOutline, pos.x, pos.y, BLACK);
+        DrawTexture(hexOutline, pos.x, pos.y, WHITE);
     }
 
     drawJar();
 }
 
 static void updateHarvestScene() {
+    updateButton(&sellHoneyButton);
     updateButton(&backToGardenButton);
+
+    if (sellHoneyButton.isClicked) {
+        // TODO 
+    }
 
     if (backToGardenButton.isClicked) {
         gs->currentScene = GARDEN;
@@ -1312,7 +1343,7 @@ static void updateHarvestScene() {
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         Vector2 point = mouseToHexPointCoordinates();
         if (point.x == -1 && point.y == -1) return;
-        HarvestHex *hex = &h->hexes[(int)point.y][(int)point.x]->flowerType;
+        HarvestHex *hex = h->hexes[(int)point.y][(int)point.x];
         if (hex->flowerType == FLOWER_NONE || hex->timeUntilReadyMS > 0) return;
         // Check for existing harvest-chain selection to disallow duplicates
         int duplicate = false;
@@ -1427,7 +1458,7 @@ static void drawJar() {
     Vector2 origin = { 0, 0 };
     DrawTexturePro(honeyGlassSprites.texture, frameRec, destRec, origin, 0, WHITE);
 
-    DrawText(TextFormat("Value: %i", gs->jar.value), 180, 650, 18, BLACK);
+    DrawTextEx(font30, TextFormat("value: %i", gs->jar.value), (Vector2){180, 650}, 30, 0, WHITE);
 }
 
 // TODOS!
