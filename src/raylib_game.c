@@ -252,6 +252,7 @@ static void clearHarvestChain(void);
 static void drawJar(void);
 static void harvestActiveChain(void);
 static void printFlowerWithPos(FlowerType type, int row, int column);
+static bool isGardenHexOccupied(Vector2 position);
 
 
 //------------------------------------------------------------------------------------
@@ -739,12 +740,20 @@ void drawBuildScene(void) {
     drawHives();
     drawFlowers();
 
+    Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+
     // Draw build 
     if (cancelPurchaseButton.isHovered) {
         return;
     }
+    bool isHexOccupied = isGardenHexOccupied(chosenHexCoord);
+
+    if (isHexOccupied) {
+        Vector2 chosenHexPixelCoord = gardenHexPositionToPixelPosition(chosenHexCoord);
+        drawGardenHexFilled(chosenHexPixelCoord, RED); 
+        return;
+    }
     
-    Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
     Vector2 chosenHexPixelCoord = gardenHexPositionToPixelPosition(chosenHexCoord);
     drawGardenHexFilled(chosenHexPixelCoord, SKYBLUE); 
 
@@ -781,6 +790,12 @@ void updateBuildScene(void) {
         }
 
         Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+        bool isHexOccupied = isGardenHexOccupied(chosenHexCoord);
+
+        if (isHexOccupied) {
+            return;
+        }
+
         int didBuild = false;
         switch (gs->currentlyBuilding) {
             case BUILD_HIVE: {
@@ -1118,15 +1133,15 @@ void drawAbout(void) {
     DrawTextEx(font20, "The theme was HEX + MERGE.", (Vector2){50, 164}, 20, 0, DARKBROWN);
     DrawTextEx(font20, "Brian Ravn (xiroV): Design, Programming, Artwork", (Vector2){50, 214}, 20, 0, DARKBROWN);
     DrawTextEx(font20, "Jonas Hinchely (Tiggles): Programming", (Vector2){50, 244}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 274}, 20, 0, DARKBROWN);
 
-    DrawTextEx(font20, "Music:", (Vector2) {50, 274}, 20, 0, DARKBROWN);
-    DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera", (Vector2) { 50, 304 }, 20, 0, DARKBROWN);
-    DrawTextEx(font20, "-- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 316 }, 20, 0, DARKBROWN);
-    DrawTextEx(font20, "Sounds:", (Vector2) { 50, 344 }, 20, 0, DARKBROWN);
-    DrawTextEx(font20, "Cha_Ching.mp3 by Lucish_ -- https://freesound.org/s/554841/ -- License: Attribution 3.0", (Vector2) { 50, 374 }, 20, 0, DARKBROWN);
-    DrawTextEx(font20, "rabbit - thump - on - soil - edited.wav by bunnyluvvid", (Vector2) { 50, 404 }, 20, 0, DARKBROWN);
-    DrawTextEx(font20, "-- https://freesound.org/s/431204/ -- License: Creative Commons 0", (Vector2) { 50, 416 }, 20, 0, DARKBROWN);
-    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 444}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Music:", (Vector2) {50, 324}, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera", (Vector2) { 50, 354 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "-- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 386 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Sounds:", (Vector2) { 50, 436 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "Cha_Ching.mp3 by Lucish_ -- https://freesound.org/s/554841/ -- License: Attribution 3.0", (Vector2) { 50, 466 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "rabbit - thump - on - soil - edited.wav by bunnyluvvid", (Vector2) { 50, 496 }, 20, 0, DARKBROWN);
+    DrawTextEx(font20, "-- https://freesound.org/s/431204/ -- License: Creative Commons 0", (Vector2) { 50, 526 }, 20, 0, DARKBROWN);
 
     // Draw buttons
     drawButton(&backToMenuButton);
@@ -1353,6 +1368,24 @@ static void printFlowerWithPos(FlowerType type, int row, int column) {
     printf(", c: %i, r: %i\n", column, row);
 }
 
+static bool isGardenHexOccupied(Vector2 position) {
+    // Check hives
+    for (unsigned int i = 0; i < gs->numHives; i++) {
+        if (position.x == gs->hives[i]->position.x && position.y == gs->hives[i]->position.y) {
+            return true;
+        }
+    }
+
+    // Check flowers
+    for (unsigned int i = 0; i < gs->numFlowers; i++) {
+        if (position.x == gs->flowers[i]->position.x && position.y == gs->flowers[i]->position.y) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static int isInHive(Hive* h, int row, int column) {
     return (column == h->position.y && row == h->position.x);
 }
@@ -1376,7 +1409,7 @@ static FlowerType chooseFlower(Hive *h) {
                     zinnias += 1;
                     break;
                 case FLOWER_DAHLIAS:
-                    zinnias += 1;
+                    dahlias += 1;
                     break;
                 case FLOWER_LAVENDERS:
                     lavenders += 1;
@@ -1407,7 +1440,6 @@ static FlowerType chooseFlower(Hive *h) {
     }
 
     return FLOWER_NONE;
-
 }
 
 static void assignHexTile(Hive *h) {
