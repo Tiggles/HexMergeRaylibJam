@@ -211,6 +211,7 @@ static Button aboutButton;
 static Button backToMenuButton;
 static Button backToGardenButton;
 static Button sellHoneyButton;
+static Button cancelPurchaseButton;
 
 static Font font20;
 static Font font30;
@@ -243,6 +244,7 @@ static Vector2 mouseToHexPointCoordinates();
 static FlowerType chooseFlower();
 static Vector2 hexDrawingCoordinates(Vector2 pos);
 static void drawHarvestScene(void);
+static void updateButton(Button* button);
 static void drawButton(Button* button);
 static void updateHarvestScene(void);
 static void clearHarvestChain(void);
@@ -326,6 +328,7 @@ int main(void)
         backToMenuButton.texture = LoadTexture("../../../src/resources/back_to_menu_button.png");
         sellHoneyButton.texture = LoadTexture("../../../src/resources/sell_honey_button.png");
         backToGardenButton.texture = LoadTexture("../../../src/resources/back_to_garden_button.png");
+        cancelPurchaseButton.texture = LoadTexture("../../../src/resources/cancel_purchase_button.png");
 
         keeperSprites[BACK] = initAnimation("../../../src/resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = initAnimation("../../../src/resources/character_front.png", 2, 500);
@@ -370,6 +373,7 @@ int main(void)
         backToMenuButton.texture = LoadTexture("resources/back_to_menu_button.png");
         backToGardenButton.texture = LoadTexture("resources/back_to_garden_button.png");
         sellHoneyButton.texture = LoadTexture("resources/sell_honey_button.png");
+        cancelPurchaseButton.texture = LoadTexture("resources/cancel_purchase_button.png");
         keeperSprites[BACK] = initAnimation("resources/character_back.png", 2, 500);
         keeperSprites[FRONT] = initAnimation("resources/character_front.png", 2, 500);
         keeperSprites[SIDE] = initAnimation("resources/character_side.png", 2, 500);
@@ -405,6 +409,8 @@ int main(void)
     backToMenuButton.isDisabled = false;
     backToGardenButton.position = (Vector2){570, 640};
     backToGardenButton.isDisabled = false;
+    cancelPurchaseButton.position = (Vector2){10, 50};
+    cancelPurchaseButton.isDisabled = false;
     sellHoneyButton.position = (Vector2){570, 602};
     sellHoneyButton.isDisabled = false;
 
@@ -639,7 +645,8 @@ void drawFlowers(void) {
                 DrawTextureV(sunflowerSprite, flowerPixelPosition, WHITE);
                 break;
             }
-            case FLOWER_NONE: {
+            case FLOWER_NONE:
+            case FLOWER_EMPTY: {
                 // Relevant elsewhere
                 break;
             }
@@ -706,6 +713,9 @@ void drawBuildScene(void) {
     // Draw background
     DrawTexture(gardenBg, 0, -110, WHITE);
 
+    // Draw button
+    drawButton(&cancelPurchaseButton);
+
     // Draw hexgrid
     for (unsigned int row = 0; row < 13; row++) {
         int numColumns = 13;
@@ -722,8 +732,11 @@ void drawBuildScene(void) {
     drawHives();
     drawFlowers();
 
-
     // Draw build 
+    if (cancelPurchaseButton.isHovered) {
+        return;
+    }
+    
     Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
     Vector2 chosenHexPixelCoord = gardenHexPositionToPixelPosition(chosenHexCoord);
     drawGardenHexFilled(chosenHexPixelCoord, SKYBLUE); 
@@ -752,8 +765,14 @@ void drawBuildScene(void) {
 
 void updateBuildScene(void) {
     Vector2 cursor = GetMousePosition(); 
+    updateButton(&cancelPurchaseButton);
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        if (cancelPurchaseButton.isClicked) {
+            gs->currentScene = SHOP; 
+            return;
+        }
+
         Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
         int didBuild = false;
         switch (gs->currentlyBuilding) {
@@ -798,10 +817,10 @@ void updateBuildScene(void) {
                 break;
             }
             default: {
-                // If item is not covered, return to garden.
-                gs->currentScene = GARDEN;
+                // If item is not covered, do nothing
             }    
         }
+
         if (didBuild) {
             PlaySound(thump);
         }
@@ -983,6 +1002,7 @@ void updateGardenScene(void) {
     if (IsKeyPressed(KEY_Z)) {
         if (gs->playerNearShop) {
            gs->currentScene = SHOP; 
+           return;
         }
 
         // If close to hive, enter harvest mode
