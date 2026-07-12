@@ -199,6 +199,7 @@ static Rectangle HexGridRect = {
 };
 Music music;
 Sound sellHoney;
+Sound thump;
 
 static Vector2 harvestChain[HARVEST_CHAIN_COUNT];
 
@@ -344,6 +345,7 @@ int main(void)
         // Music
         music = LoadMusicStream("../../../src/resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
         sellHoney = LoadSound("../../../src/resources/sounds/554841__lucish__cha_ching.mp3");
+        thump = LoadSound("../../../src/resources/sounds/431204__bunnyluvvid__rabbit-thump-on-soil-edited.wav");
 #else
         hiveSprite = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
@@ -384,7 +386,9 @@ int main(void)
         // Music
         music = LoadMusicStream("resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
 
-        sellHoney = LoadSound("resources / sounds / 554841__lucish__cha_ching.mp3");
+        sellHoney = LoadSound("resources/sounds/554841__lucish__cha_ching.mp3");
+        thump = LoadSound("resources/sounds/431204__bunnyluvvid__rabbit-thump-on-soil-edited.wav");
+
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
@@ -738,46 +742,55 @@ void updateBuildScene(void) {
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
+        int didBuild = false;
         switch (gs->currentlyBuilding) {
             case BUILD_HIVE: {
                 gs->hives[gs->numHives++] = initHive(chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= HIVE_PRICE;
                 gs->currentScene = GARDEN;
-        
+                didBuild = true;
+                
                 break;
             }
             case BUILD_ZINNIAS: {
                 gs->flowers[gs->numFlowers++] = initFlower(FLOWER_ZINNIAS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= ZINNIAS_PRICE;
                 gs->currentScene = GARDEN;
-        
+                didBuild = true;
+
                 break;
             }
             case BUILD_DAHLIAS: {
                 gs->flowers[gs->numFlowers++] = initFlower(FLOWER_DAHLIAS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= DAHLIAS_PRICE;
                 gs->currentScene = GARDEN;
-        
+                didBuild = true;
+
                 break;
             }
             case BUILD_LAVENDERS: {
                 gs->flowers[gs->numFlowers++] = initFlower(FLOWER_LAVENDERS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= LAVENDERS_PRICE;
                 gs->currentScene = GARDEN;
-        
+                didBuild = true;
+
                 break;
             }
             case BUILD_SUNFLOWERS: {
                 gs->flowers[gs->numFlowers++] = initFlower(FLOWER_SUNFLOWERS, chosenHexCoord.x, chosenHexCoord.y);
                 gs->money -= SUNFLOWERS_PRICE;
                 gs->currentScene = GARDEN;
-        
+                didBuild = true;
+
                 break;
             }
             default: {
                 // If item is not covered, return to garden.
                 gs->currentScene = GARDEN;
             }    
+        }
+        if (didBuild) {
+            PlaySound(thump);
         }
     }
 }
@@ -1067,8 +1080,11 @@ void drawAbout(void) {
     DrawTextEx(font20, "Music:", (Vector2) {50, 274}, 20, 0, BLACK);
     DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera", (Vector2) { 50, 304 }, 20, 0, BLACK);
     DrawTextEx(font20, "-- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 316 }, 20, 0, BLACK);
-    DrawTextEx(font20, "Sound: Cha_Ching.mp3 by Lucish_ -- https://freesound.org/s/554841/ -- License: Attribution 3.0", (Vector2) { 50, 344 }, 20, 0, BLACK);
-    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 404}, 20, 0, BLACK);
+    DrawTextEx(font20, "Sounds:", (Vector2) { 50, 344 }, 20, 0, BLACK);
+    DrawTextEx(font20, "Cha_Ching.mp3 by Lucish_ -- https://freesound.org/s/554841/ -- License: Attribution 3.0", (Vector2) { 50, 374 }, 20, 0, BLACK);
+    DrawTextEx(font20, "rabbit - thump - on - soil - edited.wav by bunnyluvvid", (Vector2) { 50, 404 }, 20, 0, BLACK);
+    DrawTextEx(font20, "-- https://freesound.org/s/431204/ -- License: Creative Commons 0", (Vector2) { 50, 416 }, 20, 0, BLACK);
+    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 444}, 20, 0, BLACK);
 
     // Draw buttons
     drawButton(&backToMenuButton);
