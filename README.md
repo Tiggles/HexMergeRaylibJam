@@ -47,42 +47,36 @@ This template has been created to be used with raylib (www.raylib.com) and it's 
 _Copyright (c) 2014-2026 Ramon Santamaria ([@raysan5](https://github.com/raysan5))_
 -----------------------------------
 
-## $(Game Title)
+## Best Bee-uddies 
 
-![$(Game Title)](screenshots/screenshot000.png "$(Game Title)")
+![Best Bee-uddies](/src/resources/visual.png)
 
 ### Description
 
-$(Your Game Description)
-
+Have bees, plant flowers and sell the honey from your buddies.
 ### Features
 
- - $(Game Feature 01)
- - $(Game Feature 02)
- - $(Game Feature 03)
+ - Build your bee farm
+ - Get the honey
+ - Sell the honey
+ - Buy more flowers and bees!
 
 ### Controls
 
 Keyboard:
- - $(Game Control 01)
- - $(Game Control 02)
- - $(Game Control 03)
-
-### Screenshots
-
-_TODO: Show your game to the world, animated GIFs recommended!._
+ - Use WASD or arrow keys to walk around
+ - Z to active a hive for harvesting
+ - Use your mouse to create harvesting chains
 
 ### Developers
 
- - $(Developer 01) - $(Role/Tasks Developed)
- - $(Developer 02) - $(Role/Tasks Developed)
- - $(Developer 03) - $(Role/Tasks Developed)
+ - Brian Ravn - Programmer, artist, design
+ - Jonas Malte Hinchely - Programmer
 
 ### Links
 
- - YouTube Gameplay: $(YouTube Link)
- - itch.io Release: $(itch.io Game Page)
- - Steam Release: $(Steam Game Page)
+ - xirov.itch.io
+ - tiggles.itch.io
 
 ### License
 
