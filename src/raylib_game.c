@@ -151,7 +151,7 @@ struct GameState {
 #define INITIAL_OFFSET_Y 12
 #define MOD_OFFSET_X  4
 #define UNEVEN_ROW_X_OFFSET 23
-#define NEXT_FILL_TIME_IN_SECONDS 1
+#define NEXT_FILL_TIME_IN_SECONDS 4
 #define DEFAULT_TIME_UNTIL_READY 2
 // CHECK(Brian): Kan hæves her for at lade kæden være større. Vi kunne også sige man kunne committe ved 3 og op efter?
 #define HARVEST_CHAIN_COUNT 3
@@ -198,6 +198,7 @@ static Rectangle HexGridRect = {
     .x = 73, .y = 73, .width = 575, .height = 415,
 };
 Music music;
+Sound sellHoney;
 
 static Vector2 harvestChain[HARVEST_CHAIN_COUNT];
 
@@ -342,6 +343,7 @@ int main(void)
 
         // Music
         music = LoadMusicStream("../../../src/resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
+        sellHoney = LoadSound("../../../src/resources/sounds/554841__lucish__cha_ching.mp3");
 #else
         hiveSprite = loadAnimation("resources/hive.png", 3, 200);
         harvestBg = LoadTexture("resources/harvest_bg.png");
@@ -381,6 +383,8 @@ int main(void)
 
         // Music
         music = LoadMusicStream("resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
+
+        sellHoney = LoadSound("resources / sounds / 554841__lucish__cha_ching.mp3");
 #endif
     //static Texture2D harvestBg;
     //static Texture2D keeperSprites[3];
@@ -1061,8 +1065,10 @@ void drawAbout(void) {
     DrawTextEx(font20, "Jonas Hinchely (Tiggles): Programming", (Vector2){50, 244}, 20, 0, BLACK);
 
     DrawTextEx(font20, "Music:", (Vector2) {50, 274}, 20, 0, BLACK);
-    DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera \n -- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 304 }, 20, 0, BLACK);
-    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 374}, 20, 0, BLACK);
+    DrawTextEx(font20, "Calm Acoustic Guitar for Serene Moments by Gustavo_Alivera", (Vector2) { 50, 304 }, 20, 0, BLACK);
+    DrawTextEx(font20, "-- https://freesound.org/s/761373/ -- License: Attribution 4.0", (Vector2) { 50, 316 }, 20, 0, BLACK);
+    DrawTextEx(font20, "Sound: Cha_Ching.mp3 by Lucish_ -- https://freesound.org/s/554841/ -- License: Attribution 3.0", (Vector2) { 50, 344 }, 20, 0, BLACK);
+    DrawTextEx(font20, "Made 100% without the use of generative AI/Large Language Models.", (Vector2){50, 404}, 20, 0, BLACK);
 
     // Draw buttons
     drawButton(&backToMenuButton);
@@ -1417,6 +1423,7 @@ static void updateHarvestScene() {
         gs->jar.iteration = 0;
         gs->money += gs->jar.value;
         gs->jar.value = 0;
+        PlaySound(sellHoney);
     }
 
     if (backToGardenButton.isClicked) {
@@ -1560,3 +1567,4 @@ static void drawJar() {
 // - [ ] Sounds
 // - [ ] Fancy animation when honeyGlass is filled
 // - [ ] Lower row of harvesting grid has funky behaviour
+// - [ ] Game description on web page
