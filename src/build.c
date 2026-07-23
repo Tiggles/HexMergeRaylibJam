@@ -3,9 +3,9 @@
 
 #include "raylib.h"
 
-#include "globals.c"
 #include "button.c"
 #include "garden.c"
+#include "globals.c"
 
 void drawBuildScene(void) {
   SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
