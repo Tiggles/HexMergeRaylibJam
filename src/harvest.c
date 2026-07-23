@@ -337,6 +337,15 @@ Hive *initHive(unsigned int x, unsigned int y) {
     }
   }
 
+  int fourthOfColumnCount = COLUMN_COUNT / 4;
+  int fourthOfRowCount = ROW_COUNT_UNEVEN / 4;
+  for (int c = 0; c < fourthOfColumnCount; c++) {
+      for (int r = 0; r < fourthOfColumnCount; r++) {
+          FlowerType f = chooseFlower(h);
+          h->hexes[c + fourthOfColumnCount * 2][r + fourthOfRowCount * 2]->flowerType = f;
+      }
+  }
+
   h->position = (Vector2){x, y};
   h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
   h->animation = initAnimationFromTexture(hiveSprite, 3, 200);
