@@ -4,6 +4,7 @@
 #include "raylib.h"
 #include "globals.c"
 #include "consts.c"
+#include "button.c"
 
 void drawMenu(void) {
   // Draw background
