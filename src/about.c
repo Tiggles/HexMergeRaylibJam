@@ -1,8 +1,9 @@
-#ifndef ABOUT_C
-#define ABOUT_C
+#ifndef ABOUT_GUARD
+#define ABOUT_GUARD
 
 #include "raylib.h"
 #include "globals.c"
+#include "button.c"
 
 void drawAbout(void) {
   // Draw background

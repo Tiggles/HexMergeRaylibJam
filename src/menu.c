@@ -2,17 +2,18 @@
 #define MENU_GUARD
 
 #include "raylib.h"
-#include "globals.c"
-#include "consts.c"
+
+#include "utils.c"
 #include "button.c"
+#include "consts.c"
+#include "globals.c"
 
 void drawMenu(void) {
   // Draw background
   DrawTexture(menuBg, 0, 0, WHITE);
 
   // Draw version
-  DrawTextEx(font20, TextFormat("v%s", VERSION), (Vector2){680, 690}, 20, 0,
-             WHITE);
+  DrawTextEx(font20, TextFormat("v%s", VERSION), (Vector2){680, 690}, 20, 0, WHITE);
 
   // Draw buttons
   drawButton(&startButton);

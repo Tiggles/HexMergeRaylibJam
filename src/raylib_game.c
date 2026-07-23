@@ -234,11 +234,6 @@ int main(void) {
 // Module Functions Definition
 //--------------------------------------------------------------------------------------------
 
-// Return euclidean distance between two vectors
-float vector2Distance(Vector2 a, Vector2 b) {
-  return sqrtf(powf((a.x - b.x), 2) + powf((a.y - b.y), 2));
-}
-
 // Check hive/player collision
 bool isHiveCollision(Vector2 playerPosition) {
   Rectangle playerRec = {
