@@ -5,7 +5,7 @@
 #include "button.c"
 #include "globals.c"
 
-void updateShopScene(void) {
+void updateShopScene(GameState *gs) {
   SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
   // Update buttons
@@ -43,7 +43,7 @@ void updateShopScene(void) {
   }
 }
 
-void drawShopScene(void) {
+void drawShopScene(GameState *gs) {
   // Draw background
   DrawTexture(shopBg, 0, 0, WHITE);
 

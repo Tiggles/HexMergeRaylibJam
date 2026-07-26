@@ -7,7 +7,7 @@
 #include "button.c"
 #include "garden.c"
 
-void drawBuildScene(void) {
+void drawBuildScene(GameState *gs) {
   SetMouseCursor(MOUSE_CURSOR_CROSSHAIR);
   Vector2 cursor = GetMousePosition();
 
@@ -31,8 +31,8 @@ void drawBuildScene(void) {
   }
 
   // Draw objects
-  drawHives();
-  drawFlowers();
+  drawHives(gs);
+  drawFlowers(gs);
 
   Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
 
@@ -40,7 +40,7 @@ void drawBuildScene(void) {
   if (cancelPurchaseButton.isHovered) {
     return;
   }
-  bool isHexOccupied = isGardenHexOccupied(chosenHexCoord);
+  bool isHexOccupied = isGardenHexOccupied(gs, chosenHexCoord);
 
   if (isHexOccupied) {
     Vector2 chosenHexPixelCoord =
@@ -91,7 +91,7 @@ void drawBuildScene(void) {
   }
 }
 
-void updateBuildScene(void) {
+void updateBuildScene(GameState *gs) {
   Vector2 cursor = GetMousePosition();
   updateButton(&cancelPurchaseButton);
 
@@ -102,7 +102,7 @@ void updateBuildScene(void) {
     }
 
     Vector2 chosenHexCoord = gardenHexFromPoint(cursor);
-    bool isHexOccupied = isGardenHexOccupied(chosenHexCoord);
+    bool isHexOccupied = isGardenHexOccupied(gs, chosenHexCoord);
 
     if (isHexOccupied) {
       return;

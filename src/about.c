@@ -51,7 +51,7 @@ void drawAbout(void) {
   drawButton(&backToMenuButton);
 }
 
-void updateAbout(void) {
+void updateAbout(GameState *gs) {
   updateButton(&backToMenuButton);
 
   if (backToMenuButton.isClicked) {

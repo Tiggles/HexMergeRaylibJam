@@ -5,7 +5,7 @@
 #include "globals.c"
 #include "func_decls.c"
 
-void updateGardenScene(void) {
+void updateGardenScene(GameState *gs) {
   gs->playerNearShop = false;
 
   // Update camera
@@ -72,7 +72,7 @@ void updateGardenScene(void) {
   }
 
   // Check if new suggested position is colliding with hive
-  if (!isHiveCollision(newPlayerPosition)) {
+  if (!isHiveCollision(gs, newPlayerPosition)) {
     gs->playerPosition = newPlayerPosition;
   }
 
@@ -113,7 +113,7 @@ void drawGardenHexFilled(Vector2 center, Color color) {
   DrawPoly(center, 6, 30, 210, color);
 }
 
-void drawGardenScene(void) {
+void drawGardenScene(GameState *gs) {
   KeeperSprite keeperSprite = FRONT;
 
   BeginMode2D(gardenCamera);
@@ -122,8 +122,8 @@ void drawGardenScene(void) {
   DrawTexture(gardenBg, 0, -120, WHITE);
 
   // Draw objects
-  drawHives();
-  drawFlowers();
+  drawHives(gs);
+  drawFlowers(gs);
 
   // Draw player
   switch (gs->playerDirection) {
@@ -157,8 +157,8 @@ void drawGardenScene(void) {
     break;
   }
 
-  Vector2 playerSpritePosition = {gs->playerPosition.x - 24,
-                                  gs->playerPosition.y - 28};
+  Vector2 playerSpritePosition = {.x = gs->playerPosition.x - 24,
+                                  .y = gs->playerPosition.y - 28};
   drawAnimationFrame(&keeperSprites[keeperSprite], playerSpritePosition);
 
   // Draw key if close to shop
@@ -181,7 +181,7 @@ void drawGardenScene(void) {
   EndMode2D();
 }
 
-void drawHives(void) {
+void drawHives(GameState *gs) {
   for (unsigned int i = 0; i < gs->numHives; i++) {
     Vector2 hivePixelPosition =
         gardenHexPositionToPixelPosition(gs->hives[i]->position);
@@ -191,7 +191,7 @@ void drawHives(void) {
   }
 }
 
-void drawFlowers(void) {
+void drawFlowers(GameState *gs) {
   for (unsigned int i = 0; i < gs->numFlowers; i++) {
     Vector2 flowerPixelPosition =
         gardenHexPositionToPixelPosition(gs->flowers[i]->position);
@@ -254,7 +254,7 @@ Vector2 gardenHexFromPoint(Vector2 point) {
   return closest;
 }
 
-bool isGardenHexOccupied(Vector2 position) {
+bool isGardenHexOccupied(GameState *gs, Vector2 position) {
   // Check hives
   for (unsigned int i = 0; i < gs->numHives; i++) {
     if (position.x == gs->hives[i]->position.x &&

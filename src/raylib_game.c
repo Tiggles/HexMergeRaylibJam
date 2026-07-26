@@ -71,7 +71,7 @@ int main(void) {
   // bruge escape til at afbryde en kæde ved harvesting.
   SetExitKey(KEY_NULL);
 
-  gs = malloc(sizeof(struct GameState));
+  struct GameState *gs = malloc(sizeof(struct GameState));
   gs->currentScene = MENU;
   gs->playerPosition = (Vector2){490, 120};
   gs->playerDirection = DOWN;
@@ -199,14 +199,14 @@ int main(void) {
   SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
 
 #if defined(PLATFORM_WEB)
-  emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
+  emscripten_set_main_loop_arg(UpdateDrawFrame, gs, 60, 1);
 #else
   SetTargetFPS(60); // Set our game frames-per-second
   //--------------------------------------------------------------------------------------
 
   // Main game loop
   while (!WindowShouldClose()) { // Detect window close button
-    UpdateDrawFrame();
+    UpdateDrawFrame(gs);
   }
 #endif
 
@@ -235,7 +235,7 @@ int main(void) {
 //--------------------------------------------------------------------------------------------
 
 // Check hive/player collision
-bool isHiveCollision(Vector2 playerPosition) {
+bool isHiveCollision(GameState *gs, Vector2 playerPosition) {
   Rectangle playerRec = {
       playerPosition.x - 15,
       playerPosition.y - 20,
@@ -273,7 +273,7 @@ Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates) {
   };
 }
 
-void drawHud(void) {
+void drawHud(struct GameState *gs) {
   if (gs->currentScene == MENU || gs->currentScene == ABOUT) {
     return;
   }
@@ -286,7 +286,7 @@ void drawHud(void) {
 }
 
 // Update and draw frame
-void UpdateDrawFrame(void) {
+void UpdateDrawFrame(struct GameState *gs) {
   // Update
   //----------------------------------------------------------------------------------
   gs->playerMoving = false;
@@ -301,7 +301,7 @@ void UpdateDrawFrame(void) {
       if (h->nextHexStartFill > 0) {
         h->nextHexStartFill -= delta;
       } else {
-        assignHexTile(h);
+        assignHexTile(gs, h);
         h->nextHexStartFill = NEXT_FILL_TIME_IN_SECONDS;
       }
 
@@ -321,22 +321,22 @@ void UpdateDrawFrame(void) {
 
   switch (gs->currentScene) {
   case GARDEN:
-    updateGardenScene();
+    updateGardenScene(gs);
     break;
   case SHOP:
-    updateShopScene();
+    updateShopScene(gs);
     break;
   case BUILD:
-    updateBuildScene();
+    updateBuildScene(gs);
     break;
   case MENU:
-    updateMenu();
+    updateMenu(gs);
     break;
   case ABOUT:
-    updateAbout();
+    updateAbout(gs);
     break;
   case HARVEST:
-    updateHarvestScene();
+    updateHarvestScene(gs);
     break;
   default:
     // TODO
@@ -360,19 +360,19 @@ void UpdateDrawFrame(void) {
       break;
     }
     case GARDEN: {
-      drawGardenScene();
+      drawGardenScene(gs);
       break;
     }
     case SHOP: {
-      drawShopScene();
+      drawShopScene(gs);
       break;
     }
     case BUILD: {
-      drawBuildScene();
+      drawBuildScene(gs);
       break;
     }
     case HARVEST: {
-      drawHarvestScene();
+      drawHarvestScene(gs);
       break;
     }
     case ABOUT: {
@@ -397,7 +397,7 @@ void UpdateDrawFrame(void) {
                    (Vector2){0, 0}, 0.0f, WHITE);
 
     // TODO: Draw everything that requires to be drawn at this point, maybe UI?
-    drawHud();
+    drawHud(gs);
   }
   EndDrawing();
   //----------------------------------------------------------------------------------

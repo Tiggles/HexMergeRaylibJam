@@ -11,7 +11,7 @@
 #include "func_decls.c"
 #include "animation.c"
 
-FlowerType chooseFlower(Hive *h) {
+FlowerType chooseFlower(GameState *gs, Hive *h) {
   Vector2 hivePosition = h->position;
 
   int total = 7;
@@ -65,7 +65,7 @@ FlowerType chooseFlower(Hive *h) {
   return FLOWER_NONE;
 }
 
-void assignHexTile(Hive *h) {
+void assignHexTile(GameState *gs, Hive *h) {
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 8; j++) {
       int c = GetRandomValue(0, COLUMN_COUNT - 1);
@@ -73,14 +73,14 @@ void assignHexTile(Hive *h) {
       int r = GetRandomValue(0, rowCount - 1);
       if (h->hexes[c][r]->flowerType != FLOWER_EMPTY)
         continue;
-      h->hexes[c][r]->flowerType = chooseFlower(h);
+      h->hexes[c][r]->flowerType = chooseFlower(gs, h);
       h->hexes[c][r]->timeUntilReadyMS = DEFAULT_TIME_UNTIL_READY;
       return;
     }
   }
 }
 
-void drawHarvestScene(void) {
+void drawHarvestScene(GameState *gs) {
   if (gs->activeHiveIndex == -1) {
     printf("No activeHiveIndex set. Bailing from function.\n");
     return;
@@ -132,7 +132,7 @@ void drawHarvestScene(void) {
   }
 
   if (CheckCollisionPointRec(GetMousePosition(), HexGridRect)) {
-    drawHarvestHex();
+    drawHarvestHex(gs);
   }
 
   for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
@@ -154,10 +154,10 @@ void drawHarvestScene(void) {
   DrawTextEx(font20, "Right click to cancel tile selection",
              (Vector2){270, 590}, 20, 0, WHITE);
 
-  drawJar();
+  drawJar(gs);
 }
 
-void updateHarvestScene() {
+void updateHarvestScene(GameState *gs) {
   updateButton(&sellHoneyButton);
   sellHoneyButton.isDisabled = gs->jar.iteration != JAR_ITERATIONS - 1;
   updateButton(&exitHarvestButton);
@@ -170,7 +170,7 @@ void updateHarvestScene() {
   }
 
   if (exitHarvestButton.isClicked) {
-    clearHarvestChain();
+    clearHarvestChain(gs);
     gs->currentScene = GARDEN;
   }
 
@@ -225,12 +225,12 @@ void updateHarvestScene() {
     }
 
     if (firstFreeIdx == HARVEST_CHAIN_COUNT - 1) {
-      harvestActiveChain();
-      clearHarvestChain();
+      harvestActiveChain(gs);
+      clearHarvestChain(gs);
     }
   } else if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) ||
              IsKeyDown(KEY_ESCAPE)) {
-    clearHarvestChain();
+    clearHarvestChain(gs);
   }
 }
 
@@ -252,7 +252,7 @@ int flowerTypeToMoney(FlowerType t) {
   }
 }
 
-void harvestActiveChain(void) {
+void harvestActiveChain(GameState *gs) {
   int money = 0;
   float multiplier = 0.8;
   FlowerType lastFlowerType = FLOWER_EMPTY;
@@ -276,7 +276,7 @@ void harvestActiveChain(void) {
   gs->jar.value += money;
 }
 
-void clearHarvestChain(void) {
+void clearHarvestChain(GameState *gs) {
   for (int i = 0; i < HARVEST_CHAIN_COUNT; i++) {
     Vector2 *hex = &gs->harvestChain[i];
     hex->x = -1;
@@ -284,7 +284,7 @@ void clearHarvestChain(void) {
   }
 }
 
-void drawJar() {
+void drawJar(GameState *gs) {
   float textureWidth = honeyGlassSprites.texture.width;
   float spriteWidth = textureWidth / honeyGlassSprites.numFrames;
   float spriteHeight = (float)honeyGlassSprites.texture.height;
@@ -373,7 +373,7 @@ int isTileNeighbor(Vector2 t1, Vector2 t2) {
 
 
 #define SMALL_DELTA_BETWEEN_HEXES 3
-void drawHarvestHex(void) {
+void drawHarvestHex(GameState *gs) {
   Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
   if (point.x == -1 || point.y == -1)
     return;

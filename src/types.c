@@ -94,7 +94,7 @@ typedef struct Jar {
 } Jar;
 
 #define HARVEST_CHAIN_COUNT 3
-struct GameState {
+typedef struct GameState {
     Vector2 harvestChain[HARVEST_CHAIN_COUNT];
     enum CurrentScene currentScene;
     Vector2 playerPosition;

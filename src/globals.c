@@ -64,6 +64,4 @@ Font font30;
 
 RenderTexture2D target = {0}; // Render texture to render our game
 int frameCounter = 0;
-
-struct GameState *gs = NULL;
 #endif

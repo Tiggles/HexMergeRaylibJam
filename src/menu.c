@@ -20,7 +20,7 @@ void drawMenu(void) {
   drawButton(&aboutButton);
 }
 
-void updateMenu(void) {
+void updateMenu(GameState *gs) {
   Vector2 cursor = GetMousePosition();
   startButton.isHovered = false;
   aboutButton.isHovered = false;
