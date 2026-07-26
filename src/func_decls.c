@@ -35,6 +35,6 @@ void updateShopScene(GameState*);
 void drawGardenHexFilled(Vector2, Color);
 void updateGardenScene(GameState*);
 bool isHiveCollision(GameState*, Vector2);
-Vector2 mouseToHexPointCoordinates(void);
+Vector2 mouseToHexPointCoordinates(GameState*);
 Vector2 harvestHexDrawingCoordinates(Vector2 pos);
 #endif

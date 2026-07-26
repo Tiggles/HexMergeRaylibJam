@@ -187,7 +187,7 @@ void updateHarvestScene(GameState *gs) {
 
     int isNeighbor = false;
 
-    Vector2 point = mouseToHexPointCoordinates();
+    Vector2 point = mouseToHexPointCoordinates(gs);
     if (point.x == -1 && point.y == -1)
       return;
     HarvestHex *hex = h->hexes[(int)point.y][(int)point.x];
@@ -306,7 +306,7 @@ void drawJar(GameState *gs) {
 }
 
 
-Vector2 mouseToHexPointCoordinates(void) {
+Vector2 mouseToHexPointCoordinates(GameState *gs) {
   Vector2 mouse = GetMousePosition();
   int heightOfHex = HexGridRect.height / COLUMN_COUNT;
   int column = (mouse.y - HexGridRect.y) / heightOfHex;
@@ -327,7 +327,7 @@ Vector2 mouseToHexPointCoordinates(void) {
   };
 }
 
-Hive *initHive(unsigned int x, unsigned int y) {
+Hive *initHive(GameState *gs, unsigned int x, unsigned int y) {
   Hive *h = malloc(sizeof(Hive));
   h->hexes = malloc(sizeof(size_t) * COLUMN_COUNT);
   for (int c = 0; c < COLUMN_COUNT; c++) {
@@ -341,7 +341,7 @@ Hive *initHive(unsigned int x, unsigned int y) {
   int fourthOfRowCount = ROW_COUNT_UNEVEN / 4;
   for (int c = 0; c < fourthOfColumnCount; c++) {
       for (int r = 0; r < fourthOfColumnCount; r++) {
-          FlowerType f = chooseFlower(h);
+          FlowerType f = chooseFlower(gs, h);
           h->hexes[c + fourthOfColumnCount * 2][r + fourthOfRowCount * 2]->flowerType = f;
       }
   }
@@ -383,7 +383,7 @@ int isTileNeighbor(Vector2 t1, Vector2 t2) {
 
 #define SMALL_DELTA_BETWEEN_HEXES 3
 void drawHarvestHex(GameState *gs) {
-  Vector2 point = mouseToHexPointCoordinates(); // x is row, y is column
+  Vector2 point = mouseToHexPointCoordinates(gs); // x is row, y is column
   if (point.x == -1 || point.y == -1)
     return;
   Vector2 pos = harvestHexDrawingCoordinates(point);

@@ -160,7 +160,7 @@ int main(void) {
 
   gs->hives = malloc(sizeof(Hive *) * 16);
   gs->numHives = 0;
-  gs->hives[0] = initHive(9, 2);
+  gs->hives[0] = initHive(gs, 9, 2);
   gs->numHives++;
 
   // Initialize buttons
@@ -273,7 +273,7 @@ Vector2 gardenHexPositionToPixelPosition(Vector2 hexCoordinates) {
   };
 }
 
-void drawHud(struct GameState *gs) {
+void drawHud(GameState *gs) {
   if (gs->currentScene == MENU || gs->currentScene == ABOUT) {
     return;
   }
@@ -286,7 +286,7 @@ void drawHud(struct GameState *gs) {
 }
 
 // Update and draw frame
-void UpdateDrawFrame(struct GameState *gs) {
+void UpdateDrawFrame(GameState *gs) {
   // Update
   //----------------------------------------------------------------------------------
   gs->playerMoving = false;
