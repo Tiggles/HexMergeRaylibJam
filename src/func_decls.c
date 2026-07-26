@@ -10,7 +10,7 @@ Animation initAnimation(char *fileName, int numFrames, int intervalMs);
 void drawAnimationFrame(Animation *animation, Vector2 position);
 void unloadAnimation(Animation *animation);
 void drawHarvestHex(GameState*);
-Hive *initHive(unsigned int x, unsigned int y);
+Hive *initHive(GameState*, unsigned int x, unsigned int y);
 Flower *initFlower(FlowerType type, unsigned int x, unsigned int y);
 HarvestHex *initHarvestHex();
 void assignHexTile(GameState*, Hive *h);
