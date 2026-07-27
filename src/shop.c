@@ -19,13 +19,15 @@ void updateShopScene(GameState *gs) {
     return;
   }
 
-  purchaseButtons[0].isDisabled = gs->money < HIVE_PRICE;
+  int hivePrice = BASE_HIVE_PRICE * gs->numHives;
+
+  purchaseButtons[0].isDisabled = gs->money < hivePrice;
   purchaseButtons[1].isDisabled = gs->money < ZINNIAS_PRICE;
   purchaseButtons[2].isDisabled = gs->money < DAHLIAS_PRICE;
   purchaseButtons[3].isDisabled = gs->money < LAVENDERS_PRICE;
   purchaseButtons[4].isDisabled = gs->money < SUNFLOWERS_PRICE;
 
-  if (purchaseButtons[0].isClicked && gs->money >= HIVE_PRICE) {
+  if (purchaseButtons[0].isClicked && gs->money >= hivePrice) {
     gs->currentScene = BUILD;
     gs->currentlyBuilding = BUILD_HIVE;
   } else if (purchaseButtons[1].isClicked && gs->money >= ZINNIAS_PRICE) {
@@ -50,37 +52,26 @@ void drawShopScene(GameState *gs) {
   // Draw descriptions
   DrawTextEx(font20, "A beehive full of bees. Produces delicious honey.",
              (Vector2){165, 117}, 20, 0, DARKBROWN);
-  DrawTextEx(font20, "Easy to grow, and comes in a large variety of colors.",
-             (Vector2){165, 237}, 20, 0, DARKBROWN);
+  DrawTextEx(font20, "Easy to grow, and comes in a large variety of colors.", (Vector2){165, 237}, 20, 0, DARKBROWN);
   DrawTextEx(font20,
-             "Plant near a hive to make the bees produce zinnias (red) honey.",
-             (Vector2){165, 257}, 20, 0, DARKBROWN);
+             "Plant near a hive to make the bees produce zinnias (red) honey.", (Vector2){165, 257}, 20, 0, DARKBROWN);
   DrawTextEx(font20,
-             "Their open pedals makes it easy for bees to reach the nectar.",
-             (Vector2){165, 357}, 20, 0, DARKBROWN);
+             "Their open pedals makes it easy for bees to reach the nectar.", (Vector2){165, 357}, 20, 0, DARKBROWN);
   DrawTextEx(font20,
-             "Plant near a hive to make the bees produce dahlia (pink) honey.",
-             (Vector2){165, 377}, 20, 0, DARKBROWN);
-  DrawTextEx(font20, "Bees love the fragrance, which also repels pests.",
-             (Vector2){165, 477}, 20, 0, DARKBROWN);
-  DrawTextEx(
-      font20,
-      "Plant near a hive to make the bees produce lavender (purple) honey.",
-      (Vector2){165, 497}, 20, 0, DARKBROWN);
-  DrawTextEx(font20, "Rich in nectar and pollen. A favorite among bees.",
-             (Vector2){165, 597}, 20, 0, DARKBROWN);
-  DrawTextEx(
-      font20,
-      "Plant near a hive to make the bees produce sunflower (orange) honey.",
-      (Vector2){165, 617}, 20, 0, DARKBROWN);
+             "Plant near a hive to make the bees produce dahlia (pink) honey.", (Vector2){165, 377}, 20, 0, DARKBROWN);
+  DrawTextEx(font20, "Bees love the fragrance, which also repels pests.", (Vector2){165, 477}, 20, 0, DARKBROWN);
+  DrawTextEx(font20, "Plant near a hive to make the bees produce lavender (purple) honey.", (Vector2){165, 497}, 20, 0, DARKBROWN);
+  DrawTextEx(font20, "Rich in nectar and pollen. A favorite among bees.", (Vector2){165, 597}, 20, 0, DARKBROWN);
+  DrawTextEx(font20, "Plant near a hive to make the bees produce sunflower (orange) honey.", (Vector2){165, 617}, 20, 0, DARKBROWN);
 
   // Draw prices
   DrawTexture(coin, 500, 170, WHITE);
-  if (gs->money >= HIVE_PRICE) {
-    DrawTextEx(font30, TextFormat("%i", HIVE_PRICE * gs->numHives), (Vector2){520, 163}, 30, 0,
+  int hivePrice = BASE_HIVE_PRICE * gs->numHives;
+  if (gs->money >= hivePrice) {
+    DrawTextEx(font30, TextFormat("%i", hivePrice), (Vector2){520, 163}, 30, 0,
                DARKBROWN);
   } else {
-    DrawTextEx(font30, TextFormat("%i", HIVE_PRICE * gs->numHives), (Vector2){520, 163}, 30, 0,
+    DrawTextEx(font30, TextFormat("%i", hivePrice), (Vector2){520, 163}, 30, 0,
                RED);
   }
 
@@ -95,11 +86,9 @@ void drawShopScene(GameState *gs) {
 
   DrawTexture(coin, 500, 408, WHITE);
   if (gs->money >= DAHLIAS_PRICE) {
-    DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30,
-               0, DARKBROWN);
+    DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30, 0, DARKBROWN);
   } else {
-    DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30,
-               0, RED);
+    DrawTextEx(font30, TextFormat("%i", DAHLIAS_PRICE), (Vector2){520, 401}, 30, 0, RED);
   }
 
   DrawTexture(coin, 500, 527, WHITE);

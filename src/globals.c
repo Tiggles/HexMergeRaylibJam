@@ -9,12 +9,12 @@ const int screenHeight = 720;
 const Vector2 SHOP_POSITION = {660, -20};
 const int MOVEMENT_SPEED = 200;
 const int GARDEN_HEX_SIZE = 30;
-const int HIVE_PRICE = 10000;
+const int BASE_HIVE_PRICE = 10000;
 const int ZINNIAS_PRICE = 500;
 const int DAHLIAS_PRICE = 1000;
 const int LAVENDERS_PRICE = 2000;
 const int SUNFLOWERS_PRICE = 5000;
-const int STARTING_MONEY = 5000;
+const int STARTING_MONEY = 50000;
 
 Texture2D hiveSprite;
 Texture2D harvestBg;

@@ -111,8 +111,8 @@ void updateBuildScene(GameState *gs) {
     int didBuild = false;
     switch (gs->currentlyBuilding) {
     case BUILD_HIVE: {
+      gs->money -= BASE_HIVE_PRICE * gs->numHives;
       gs->hives[gs->numHives++] = initHive(gs, chosenHexCoord.x, chosenHexCoord.y);
-      gs->money -= HIVE_PRICE;
       gs->currentScene = GARDEN;
       didBuild = true;
 
