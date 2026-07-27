@@ -77,10 +77,10 @@ void drawShopScene(GameState *gs) {
   // Draw prices
   DrawTexture(coin, 500, 170, WHITE);
   if (gs->money >= HIVE_PRICE) {
-    DrawTextEx(font30, TextFormat("%i", HIVE_PRICE), (Vector2){520, 163}, 30, 0,
+    DrawTextEx(font30, TextFormat("%i", HIVE_PRICE * gs->numHives), (Vector2){520, 163}, 30, 0,
                DARKBROWN);
   } else {
-    DrawTextEx(font30, TextFormat("%i", HIVE_PRICE), (Vector2){520, 163}, 30, 0,
+    DrawTextEx(font30, TextFormat("%i", HIVE_PRICE * gs->numHives), (Vector2){520, 163}, 30, 0,
                RED);
   }
 

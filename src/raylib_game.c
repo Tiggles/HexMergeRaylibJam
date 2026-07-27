@@ -71,7 +71,7 @@ int main(void) {
   // bruge escape til at afbryde en kæde ved harvesting.
   SetExitKey(KEY_NULL);
 
-  struct GameState *gs = malloc(sizeof(struct GameState));
+  GameState *gs = malloc(sizeof(GameState));
   gs->currentScene = MENU;
   gs->playerPosition = (Vector2){490, 120};
   gs->playerDirection = DOWN;
@@ -155,8 +155,7 @@ int main(void) {
       "resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
 
   sellHoney = LoadSound("resources/sounds/554841__lucish__cha_ching.mp3");
-  thump = LoadSound(
-      "resources/sounds/431204__bunnyluvvid__rabbit-thump-on-soil-edited.wav");
+  thump = LoadSound("resources/sounds/431204__bunnyluvvid__rabbit-thump-on-soil-edited.wav");
 
   gs->hives = malloc(sizeof(Hive *) * 16);
   gs->numHives = 0;
