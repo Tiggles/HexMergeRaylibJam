@@ -14,7 +14,7 @@ const int ZINNIAS_PRICE = 500;
 const int DAHLIAS_PRICE = 1000;
 const int LAVENDERS_PRICE = 2000;
 const int SUNFLOWERS_PRICE = 5000;
-const int STARTING_MONEY = 50000;
+const int STARTING_MONEY = 5000;
 
 Texture2D hiveSprite;
 Texture2D harvestBg;
