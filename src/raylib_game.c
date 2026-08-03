@@ -166,7 +166,7 @@ int main(void) {
   if (FileExists("./Foobar.txt")) {
       printf("%s\n", LoadFileText("./Foobar.txt"));
   } else {
-      const success = SaveFileText("./Foobar.txt", "data");
+      bool success = SaveFileText("./Foobar.txt", "data");
       if (!success) printf("Failed to save stuff");
   }
 
