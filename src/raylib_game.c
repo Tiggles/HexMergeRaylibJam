@@ -162,6 +162,14 @@ int main(void) {
   gs->hives[0] = initHive(gs, 9, 2);
   gs->numHives++;
 
+  
+  if (FileExists("./Foobar.txt")) {
+      printf("%s\n", LoadFileText("./Foobar.txt"));
+  } else {
+      const success = SaveFileText("./Foobar.txt", "data");
+      if (!success) printf("Failed to save stuff");
+  }
+
   // Initialize buttons
   startButton.position = (Vector2){20, 600};
   startButton.isDisabled = false;
