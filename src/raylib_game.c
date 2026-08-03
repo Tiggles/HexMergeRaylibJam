@@ -54,6 +54,9 @@
 #include "harvest.c"
 #include "menu.c"
 #include "shop.c"
+
+
+char* text = NULL;
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -161,13 +164,17 @@ int main(void) {
   gs->numHives = 0;
   gs->hives[0] = initHive(gs, 9, 2);
   gs->numHives++;
-
   
   if (FileExists("./Foobar.txt")) {
-      printf("%s\n", LoadFileText("./Foobar.txt"));
+      text = LoadFileText("./Foobar.txt");
   } else {
       bool success = SaveFileText("./Foobar.txt", "data");
-      if (!success) printf("Failed to save stuff");
+      if (!success) {
+          text = "Failed to save stuff";
+      }
+      else {
+          text = LoadFileText("./Foobar.txt");
+      }
   }
 
   // Initialize buttons
@@ -359,7 +366,7 @@ void UpdateDrawFrame(GameState *gs) {
   // it could be useful for scaling or further shader postprocessing
   BeginTextureMode(target);
   {
-    ClearBackground(GRASSGREEN);
+      ClearBackground(GRASSGREEN);
 
     switch (gs->currentScene) {
     case MENU: {
@@ -388,6 +395,7 @@ void UpdateDrawFrame(GameState *gs) {
     }
     }
   }
+  DrawText(text, 50, 150, 24, RED);
   EndTextureMode();
 
   // Render to screen (main framebuffer)
