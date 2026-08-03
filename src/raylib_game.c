@@ -55,8 +55,6 @@
 #include "menu.c"
 #include "shop.c"
 
-
-char* text = "NULL";
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -158,23 +156,13 @@ int main(void) {
       "resources/music/calm-acoustic-guitar-for-serene-moments.mp3");
 
   sellHoney = LoadSound("resources/sounds/554841__lucish__cha_ching.mp3");
-  thump = LoadSound("resources/sounds/431204__bunnyluvvid__rabbit-thump-on-soil-edited.wav");
+  thump = LoadSound(
+      "resources/sounds/431204__bunnyluvvid__rabbit-thump-on-soil-edited.wav");
 
   gs->hives = malloc(sizeof(Hive *) * 16);
   gs->numHives = 0;
   gs->hives[0] = initHive(gs, 9, 2);
   gs->numHives++;
-  
-  if (FileExists("./Foobar.txt")) {
-      text = LoadFileText("./Foobar.txt");
-  } else {
-      bool success = SaveFileText("./Foobar.txt", "data");
-      if (!success) {
-          text = "Failed to save stuff";
-      } else {
-          text = LoadFileText("./Foobar.txt");
-      }
-  }
 
   // Initialize buttons
   startButton.position = (Vector2){20, 600};
@@ -212,7 +200,7 @@ int main(void) {
   SetTextureFilter(target.texture, TEXTURE_FILTER_BILINEAR);
 
 #if defined(PLATFORM_WEB)
-  emscripten_set_main_loop_arg((void (*)(void*))UpdateDrawFrame, gs, 60, 1);
+  emscripten_set_main_loop_arg((void (*)(void *))UpdateDrawFrame, gs, 60, 1);
 #else
   SetTargetFPS(60); // Set our game frames-per-second
   //--------------------------------------------------------------------------------------
@@ -365,7 +353,7 @@ void UpdateDrawFrame(GameState *gs) {
   // it could be useful for scaling or further shader postprocessing
   BeginTextureMode(target);
   {
-      ClearBackground(GRASSGREEN);
+    ClearBackground(GRASSGREEN);
 
     switch (gs->currentScene) {
     case MENU: {
