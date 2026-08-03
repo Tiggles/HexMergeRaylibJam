@@ -56,7 +56,7 @@
 #include "shop.c"
 
 
-char* text = NULL;
+char* text = "NULL";
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -171,8 +171,7 @@ int main(void) {
       bool success = SaveFileText("./Foobar.txt", "data");
       if (!success) {
           text = "Failed to save stuff";
-      }
-      else {
+      } else {
           text = LoadFileText("./Foobar.txt");
       }
   }
