@@ -55,6 +55,9 @@
 #include "menu.c"
 #include "shop.c"
 
+char* text = NULL;
+
+
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -163,6 +166,14 @@ int main(void) {
   gs->numHives = 0;
   gs->hives[0] = initHive(gs, 9, 2);
   gs->numHives++;
+
+
+  if (!FileExists("./foobar.txt")) {
+      SaveFileText("./foobar.txt", "DATA");
+      text = "NOT FOUND";
+  } else {
+      text = LoadFileText("./foobar.txt");
+  }
 
   // Initialize buttons
   startButton.position = (Vector2){20, 600};
